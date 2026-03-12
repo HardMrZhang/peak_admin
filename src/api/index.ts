@@ -25,10 +25,6 @@ request.interceptors.response.use(
     const res = response.data as ApiRes
     if (res.code !== 0) {
       message.error(res.message || '请求失败')
-      if (res.code === 401) {
-        localStorage.removeItem('peak_admin_token')
-        window.location.href = '/login'
-      }
       if (res.code === 403) {
         message.error('无权限执行此操作')
       }
@@ -40,11 +36,6 @@ request.interceptors.response.use(
     const status = error.response?.status
     const url = error.config?.url || ''
     console.error(`[API Error] ${error.config?.method?.toUpperCase()} ${url} → ${status}`, error.response?.data)
-    if (status === 401) {
-      localStorage.removeItem('peak_admin_token')
-      window.location.href = '/login'
-      return Promise.reject(error)
-    }
     if (status === 403) {
       message.error('无权限执行此操作')
       return Promise.reject(error)
