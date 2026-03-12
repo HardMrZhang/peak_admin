@@ -38,6 +38,8 @@ request.interceptors.response.use(
   },
   (error) => {
     const status = error.response?.status
+    const url = error.config?.url || ''
+    console.error(`[API Error] ${error.config?.method?.toUpperCase()} ${url} → ${status}`, error.response?.data)
     if (status === 401) {
       localStorage.removeItem('peak_admin_token')
       window.location.href = '/login'

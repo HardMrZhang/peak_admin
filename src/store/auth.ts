@@ -49,7 +49,8 @@ export const useAuthStore = create<AuthState>((set, get) => ({
         permissions: res.data.permissions || [],
         loading: false,
       })
-    } catch {
+    } catch (err) {
+      console.error('[fetchProfile] failed', err)
       set({ loading: false })
     }
   },
