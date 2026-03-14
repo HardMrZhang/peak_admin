@@ -54,8 +54,7 @@ export default function NodeConfigPage() {
       if (referralRes.status === 'fulfilled') {
         referralForm.setFieldsValue({
           rewardPerNodeUsdt: referralRes.value.data?.rewardPerNodeUsdt ?? 50,
-          maxLevelNodeHolder: referralRes.value.data?.maxLevelNodeHolder ?? 10,
-          maxLevelNormalUser: referralRes.value.data?.maxLevelNormalUser ?? 1,
+          pointPerNode: referralRes.value.data?.pointPerNode ?? 100,
         })
       }
     } finally {
@@ -67,16 +66,11 @@ export default function NodeConfigPage() {
 
   const handleReferralSave = async () => {
     const values = await referralForm.validateFields()
-    if (values.maxLevelNormalUser > values.maxLevelNodeHolder) {
-      message.error('普通用户层级不能大于节点持有者层级')
-      return
-    }
     setSavingReferral(true)
     try {
       await updateReferralSettings({
         rewardPerNodeUsdt: values.rewardPerNodeUsdt,
-        maxLevelNodeHolder: values.maxLevelNodeHolder,
-        maxLevelNormalUser: values.maxLevelNormalUser,
+        pointPerNode: values.pointPerNode,
       })
       message.success('推广参数已更新')
       loadData()
@@ -241,18 +235,11 @@ export default function NodeConfigPage() {
             <InputNumber min={1} precision={0} style={{ width: 160 }} />
           </Form.Item>
           <Form.Item
-            name="maxLevelNodeHolder"
-            label="节点持有者层级"
-            rules={[{ required: true, message: '请输入层级' }]}
+            name="pointPerNode"
+            label="每节点积分"
+            rules={[{ required: true, message: '请输入积分数量' }]}
           >
-            <InputNumber min={1} max={20} precision={0} style={{ width: 160 }} />
-          </Form.Item>
-          <Form.Item
-            name="maxLevelNormalUser"
-            label="普通用户层级"
-            rules={[{ required: true, message: '请输入层级' }]}
-          >
-            <InputNumber min={1} max={20} precision={0} style={{ width: 160 }} />
+            <InputNumber min={1} precision={0} style={{ width: 160 }} />
           </Form.Item>
         </Form>
       </Card>

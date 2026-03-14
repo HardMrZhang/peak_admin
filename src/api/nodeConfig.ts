@@ -4,8 +4,7 @@ export type NodeConfigStatus = 'NOT_STARTED' | 'ON_SALE' | 'PAUSED' | 'ENDED'
 
 export interface ReferralSettings {
   rewardPerNodeUsdt: number
-  maxLevelNodeHolder: number
-  maxLevelNormalUser: number
+  pointPerNode: number
   updatedAt?: string | null
 }
 
