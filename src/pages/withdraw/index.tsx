@@ -53,8 +53,12 @@ export default function WithdrawPage() {
       if (values.asset) params.asset = values.asset
       if (values.riskFlag !== undefined && values.riskFlag !== null) params.riskFlag = values.riskFlag
       const res: any = await getWithdraws(params)
+      console.log('[Withdraw] API response:', res)
       setData(res.data?.list || [])
       setPagination({ current: page, pageSize, total: res.data?.total || 0 })
+    } catch (err) {
+      console.error('[Withdraw] loadData error:', err)
+      message.error('加载提现列表失败，请检查网络或权限')
     } finally {
       setLoading(false)
     }

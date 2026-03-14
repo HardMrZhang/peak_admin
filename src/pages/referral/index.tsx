@@ -91,8 +91,8 @@ export default function ReferralPage() {
   const rewardColumns = [
     {
       title: '推荐人',
-      dataIndex: 'fromUserWallet',
-      key: 'fromUserWallet',
+      dataIndex: 'toUserWallet',
+      key: 'toUserWallet',
       width: 160,
       render: (v: string) => (
         v ? (
@@ -104,8 +104,8 @@ export default function ReferralPage() {
     },
     {
       title: '被推荐人',
-      dataIndex: 'toUserWallet',
-      key: 'toUserWallet',
+      dataIndex: 'fromUserWallet',
+      key: 'fromUserWallet',
       width: 160,
       render: (v: string) => (
         v ? (
@@ -166,8 +166,8 @@ export default function ReferralPage() {
             <Form.Item name="userId"><Input placeholder="用户ID" allowClear /></Form.Item>
           ) : (
             <>
-              <Form.Item name="toUserId"><Input placeholder="推荐人用户ID" allowClear /></Form.Item>
-              <Form.Item name="fromUserId"><Input placeholder="被推荐用户ID" allowClear /></Form.Item>
+              <Form.Item name="toUserId"><Input placeholder="推荐人ID" allowClear /></Form.Item>
+              <Form.Item name="fromUserId"><Input placeholder="被推荐人ID" allowClear /></Form.Item>
               <Form.Item name="status">
                 <Select
                   placeholder="状态"
