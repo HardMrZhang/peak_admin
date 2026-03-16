@@ -136,15 +136,24 @@ export async function sendSplTransfer(
 
   if (provider.signAndSendTransaction) {
     const result = await provider.signAndSendTransaction(tx, { preflightCommitment: 'confirmed' })
-    sig = result.signature
+    sig = (result as any)?.signature
+      || (result as any)?.txid
+      || (result as any)?.transactionHash
+      || (typeof result === 'string' ? result : '')
+    console.log('[solana] signAndSendTransaction result:', JSON.stringify(result), '-> sig:', sig)
   } else if (provider.signTransaction) {
     const signed = await provider.signTransaction(tx)
     sig = await connection.sendRawTransaction(signed.serialize(), {
       skipPreflight: false,
       preflightCommitment: 'confirmed',
     })
+    console.log('[solana] signTransaction + sendRaw -> sig:', sig)
   } else {
     throw new Error('钱包不支持签名交易')
+  }
+
+  if (!sig) {
+    throw new Error('钱包未返回交易签名，请检查控制台日志')
   }
 
   connection.confirmTransaction({ signature: sig, blockhash, lastValidBlockHeight }, 'confirmed')
