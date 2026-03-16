@@ -20,8 +20,8 @@ export function markWithdrawRisk(id: string, riskReason: string) {
   return request.post(`/withdraw/${id}/risk`, { riskReason })
 }
 
-export function confirmWithdrawSend(id: string, txHash: string) {
-  return request.post(`/withdraw/${id}/confirm`, { txHash })
+export function confirmWithdrawSend(id: string, txHash: string, feeTxHash?: string) {
+  return request.post(`/withdraw/${id}/confirm`, { txHash, feeTxHash })
 }
 
 export function batchApproveWithdraws(requestIds: string[]) {

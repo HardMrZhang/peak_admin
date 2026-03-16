@@ -39,8 +39,11 @@ export default function WithdrawPage() {
   const [rejectReason, setRejectReason] = useState('')
   const [riskReason, setRiskReason] = useState('')
   const [txHash, setTxHash] = useState('')
+  const [feeTxHash, setFeeTxHash] = useState('')
   const [confirmLoading, setConfirmLoading] = useState(false)
   const [form] = Form.useForm()
+
+  const FEE_COLLECT_ADDRESS = 'EfQv2XvBGckvhDh2urjC6bjnvmjuE8f6wnA7ZHbBRRNL'
 
   const shortText = (value?: string | null, head = 8, tail = 6) => {
     if (!value) return '-'
@@ -122,20 +125,22 @@ export default function WithdrawPage() {
     setCurrentId(record.id)
     setCurrentRecord(record)
     setTxHash('')
+    setFeeTxHash('')
     setConfirmVisible(true)
   }
 
   const handleConfirmSend = async () => {
     if (!txHash.trim() || txHash.trim().length < 20) {
-      message.warning('请输入有效的链上交易哈希')
+      message.warning('请输入有效的用户转账交易哈希')
       return
     }
     setConfirmLoading(true)
     try {
-      await confirmWithdrawSend(currentId, txHash.trim())
+      await confirmWithdrawSend(currentId, txHash.trim(), feeTxHash.trim() || undefined)
       message.success('已确认发送，提现完成')
       setConfirmVisible(false)
       setTxHash('')
+      setFeeTxHash('')
       loadData(pagination.current, pagination.pageSize)
     } catch {
       /* empty */
@@ -335,28 +340,46 @@ export default function WithdrawPage() {
       >
         {currentRecord && (
           <div style={{ marginTop: 16 }}>
-            <Descriptions column={1} size="small" bordered>
-              <Descriptions.Item label="资产类型">{currentRecord.asset}</Descriptions.Item>
-              <Descriptions.Item label="到账金额">
-                <Text strong style={{ color: '#10b981' }}>{currentRecord.actualAmount} {currentRecord.asset}</Text>
-              </Descriptions.Item>
-              <Descriptions.Item label="手续费">{currentRecord.feeAmount} {currentRecord.asset}</Descriptions.Item>
-              <Descriptions.Item label="收款地址">
-                <Text copyable style={{ fontSize: 12 }}>{currentRecord.toAddress}</Text>
-              </Descriptions.Item>
-            </Descriptions>
-            <div style={{ marginTop: 16 }}>
-              <Text type="secondary" style={{ display: 'block', marginBottom: 8 }}>
-                请先用钱包将 <Text strong>{currentRecord.actualAmount} {currentRecord.asset}</Text> 转至上方收款地址，
-                手续费 <Text strong>{currentRecord.feeAmount} {currentRecord.asset}</Text> 转至手续费归集地址，
-                然后将链上交易哈希粘贴到下方：
-              </Text>
-              <Input
-                placeholder="请输入 Solana 链上交易哈希 (txHash)"
-                value={txHash}
-                onChange={(e) => setTxHash(e.target.value)}
-                allowClear
-              />
+            <div style={{ background: '#f0f5ff', borderRadius: 8, padding: 16, marginBottom: 16 }}>
+              <Text strong style={{ fontSize: 14, display: 'block', marginBottom: 8 }}>第一步：转账给用户</Text>
+              <Descriptions column={1} size="small" bordered>
+                <Descriptions.Item label="转账金额">
+                  <Text strong style={{ color: '#10b981', fontSize: 16 }}>{currentRecord.actualAmount} {currentRecord.asset}</Text>
+                </Descriptions.Item>
+                <Descriptions.Item label="收款地址">
+                  <Text copyable style={{ fontSize: 12 }}>{currentRecord.toAddress}</Text>
+                </Descriptions.Item>
+              </Descriptions>
+              <div style={{ marginTop: 12 }}>
+                <Text type="secondary" style={{ display: 'block', marginBottom: 4 }}>交易哈希：</Text>
+                <Input
+                  placeholder="转给用户的 txHash"
+                  value={txHash}
+                  onChange={(e) => setTxHash(e.target.value)}
+                  allowClear
+                />
+              </div>
+            </div>
+
+            <div style={{ background: '#fff7e6', borderRadius: 8, padding: 16 }}>
+              <Text strong style={{ fontSize: 14, display: 'block', marginBottom: 8 }}>第二步：手续费归集</Text>
+              <Descriptions column={1} size="small" bordered>
+                <Descriptions.Item label="手续费">
+                  <Text strong style={{ color: '#f59e0b' }}>{currentRecord.feeAmount} {currentRecord.asset}</Text>
+                </Descriptions.Item>
+                <Descriptions.Item label="归集地址">
+                  <Text copyable style={{ fontSize: 12 }}>{FEE_COLLECT_ADDRESS}</Text>
+                </Descriptions.Item>
+              </Descriptions>
+              <div style={{ marginTop: 12 }}>
+                <Text type="secondary" style={{ display: 'block', marginBottom: 4 }}>交易哈希（选填）：</Text>
+                <Input
+                  placeholder="手续费转账的 txHash（选填）"
+                  value={feeTxHash}
+                  onChange={(e) => setFeeTxHash(e.target.value)}
+                  allowClear
+                />
+              </div>
             </div>
           </div>
         )}
