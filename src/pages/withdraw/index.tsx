@@ -380,27 +380,29 @@ export default function WithdrawPage() {
         confirmLoading={confirmLoading}
         okText="确认完成"
         okButtonProps={{ disabled: !txHash || !feeTxHash }}
-        width={560}
+        width={600}
       >
         {currentRecord && (
-          <div style={{ marginTop: 16 }}>
-            <div style={{ background: '#f0f5ff', borderRadius: 8, padding: 16, marginBottom: 16 }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
-                <Text strong style={{ fontSize: 14 }}>第一步：转账给用户</Text>
+          <div style={{ marginTop: 12 }}>
+            <div style={{ background: '#f0f5ff', borderRadius: 8, padding: '14px 16px', marginBottom: 12 }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}>
+                <Text strong>第一步：转账给用户</Text>
                 {txHash ? <Tag color="success">已完成</Tag> : <Tag color="processing">待转账</Tag>}
               </div>
-              <Descriptions column={1} size="small" bordered>
-                <Descriptions.Item label="转账金额">
-                  <Text strong style={{ color: '#10b981', fontSize: 16 }}>{currentRecord.actualAmount} {currentRecord.asset}</Text>
-                </Descriptions.Item>
-                <Descriptions.Item label="收款地址">
-                  <Text copyable style={{ fontSize: 12 }}>{currentRecord.toAddress}</Text>
-                </Descriptions.Item>
-              </Descriptions>
+              <div style={{ marginBottom: 6 }}>
+                <Text type="secondary" style={{ fontSize: 13 }}>金额：</Text>
+                <Text strong style={{ color: '#10b981', fontSize: 15 }}>{currentRecord.actualAmount} {currentRecord.asset}</Text>
+              </div>
+              <div style={{ marginBottom: 6 }}>
+                <Text type="secondary" style={{ fontSize: 13 }}>收款地址：</Text>
+                <br />
+                <Text copyable code style={{ fontSize: 12, wordBreak: 'break-all' }}>{currentRecord.toAddress}</Text>
+              </div>
               {txHash ? (
-                <div style={{ marginTop: 12 }}>
-                  <Text type="secondary">txHash：</Text>
-                  <Text copyable style={{ fontSize: 12, wordBreak: 'break-all' }}>{txHash}</Text>
+                <div style={{ marginTop: 8, padding: '6px 10px', background: '#e6fffb', borderRadius: 4 }}>
+                  <Text type="secondary" style={{ fontSize: 12 }}>txHash：</Text>
+                  <br />
+                  <Text copyable style={{ fontSize: 11, wordBreak: 'break-all' }}>{txHash}</Text>
                 </div>
               ) : (
                 <Button
@@ -408,39 +410,40 @@ export default function WithdrawPage() {
                   icon={<SendOutlined />}
                   loading={sendingUser}
                   onClick={handleSendToUser}
-                  style={{ marginTop: 12, width: '100%' }}
+                  style={{ marginTop: 8, width: '100%' }}
                 >
                   发送 {currentRecord.actualAmount} {currentRecord.asset} 给用户
                 </Button>
               )}
             </div>
 
-            <div style={{ background: '#fff7e6', borderRadius: 8, padding: 16 }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
-                <Text strong style={{ fontSize: 14 }}>第二步：手续费归集</Text>
+            <div style={{ background: '#fff7e6', borderRadius: 8, padding: '14px 16px' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}>
+                <Text strong>第二步：手续费归集</Text>
                 {feeTxHash ? <Tag color="success">已完成</Tag> : <Tag color="warning">待转账</Tag>}
               </div>
-              <Descriptions column={1} size="small" bordered>
-                <Descriptions.Item label="手续费">
-                  <Text strong style={{ color: '#f59e0b' }}>{currentRecord.feeAmount} {currentRecord.asset}</Text>
-                </Descriptions.Item>
-                <Descriptions.Item label="归集地址">
-                  <Text copyable style={{ fontSize: 12 }}>{FEE_COLLECT_ADDRESS}</Text>
-                </Descriptions.Item>
-              </Descriptions>
+              <div style={{ marginBottom: 6 }}>
+                <Text type="secondary" style={{ fontSize: 13 }}>手续费：</Text>
+                <Text strong style={{ color: '#f59e0b', fontSize: 15 }}>{currentRecord.feeAmount} {currentRecord.asset}</Text>
+              </div>
+              <div style={{ marginBottom: 6 }}>
+                <Text type="secondary" style={{ fontSize: 13 }}>归集地址：</Text>
+                <br />
+                <Text copyable code style={{ fontSize: 12, wordBreak: 'break-all' }}>{FEE_COLLECT_ADDRESS}</Text>
+              </div>
               {feeTxHash ? (
-                <div style={{ marginTop: 12 }}>
-                  <Text type="secondary">txHash：</Text>
-                  <Text copyable style={{ fontSize: 12, wordBreak: 'break-all' }}>{feeTxHash}</Text>
+                <div style={{ marginTop: 8, padding: '6px 10px', background: '#e6fffb', borderRadius: 4 }}>
+                  <Text type="secondary" style={{ fontSize: 12 }}>txHash：</Text>
+                  <br />
+                  <Text copyable style={{ fontSize: 11, wordBreak: 'break-all' }}>{feeTxHash}</Text>
                 </div>
               ) : (
                 <Button
-                  type="default"
                   icon={<SendOutlined />}
                   loading={sendingFee}
                   onClick={handleSendFee}
                   disabled={!txHash}
-                  style={{ marginTop: 12, width: '100%', borderColor: '#f59e0b', color: sendingFee ? undefined : '#f59e0b' }}
+                  style={{ marginTop: 8, width: '100%', borderColor: '#f59e0b', color: sendingFee ? undefined : '#f59e0b' }}
                 >
                   发送 {currentRecord.feeAmount} {currentRecord.asset} 手续费
                 </Button>
