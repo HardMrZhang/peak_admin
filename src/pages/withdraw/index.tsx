@@ -398,22 +398,21 @@ export default function WithdrawPage() {
                 <br />
                 <Text copyable code style={{ fontSize: 12, wordBreak: 'break-all' }}>{currentRecord.toAddress}</Text>
               </div>
-              {txHash ? (
-                <div style={{ marginTop: 8, padding: '6px 10px', background: '#e6fffb', borderRadius: 4 }}>
-                  <Text type="secondary" style={{ fontSize: 12 }}>txHash：</Text>
-                  <br />
+              <Button
+                type="primary"
+                icon={txHash ? <CheckCircleOutlined /> : <SendOutlined />}
+                loading={sendingUser}
+                onClick={handleSendToUser}
+                disabled={!!txHash}
+                style={{ marginTop: 8, width: '100%' }}
+              >
+                {txHash ? '已发送' : `发送 ${currentRecord.actualAmount} ${currentRecord.asset} 给用户`}
+              </Button>
+              {txHash && (
+                <div style={{ marginTop: 6 }}>
+                  <Text type="secondary" style={{ fontSize: 11 }}>txHash：</Text>
                   <Text copyable style={{ fontSize: 11, wordBreak: 'break-all' }}>{txHash}</Text>
                 </div>
-              ) : (
-                <Button
-                  type="primary"
-                  icon={<SendOutlined />}
-                  loading={sendingUser}
-                  onClick={handleSendToUser}
-                  style={{ marginTop: 8, width: '100%' }}
-                >
-                  发送 {currentRecord.actualAmount} {currentRecord.asset} 给用户
-                </Button>
               )}
             </div>
 
@@ -431,22 +430,20 @@ export default function WithdrawPage() {
                 <br />
                 <Text copyable code style={{ fontSize: 12, wordBreak: 'break-all' }}>{FEE_COLLECT_ADDRESS}</Text>
               </div>
-              {feeTxHash ? (
-                <div style={{ marginTop: 8, padding: '6px 10px', background: '#e6fffb', borderRadius: 4 }}>
-                  <Text type="secondary" style={{ fontSize: 12 }}>txHash：</Text>
-                  <br />
+              <Button
+                icon={feeTxHash ? <CheckCircleOutlined /> : <SendOutlined />}
+                loading={sendingFee}
+                onClick={handleSendFee}
+                disabled={!txHash || !!feeTxHash}
+                style={{ marginTop: 8, width: '100%', borderColor: feeTxHash ? undefined : '#f59e0b', color: (sendingFee || feeTxHash) ? undefined : '#f59e0b' }}
+              >
+                {feeTxHash ? '已发送' : `发送 ${currentRecord.feeAmount} ${currentRecord.asset} 手续费`}
+              </Button>
+              {feeTxHash && (
+                <div style={{ marginTop: 6 }}>
+                  <Text type="secondary" style={{ fontSize: 11 }}>txHash：</Text>
                   <Text copyable style={{ fontSize: 11, wordBreak: 'break-all' }}>{feeTxHash}</Text>
                 </div>
-              ) : (
-                <Button
-                  icon={<SendOutlined />}
-                  loading={sendingFee}
-                  onClick={handleSendFee}
-                  disabled={!txHash}
-                  style={{ marginTop: 8, width: '100%', borderColor: '#f59e0b', color: sendingFee ? undefined : '#f59e0b' }}
-                >
-                  发送 {currentRecord.feeAmount} {currentRecord.asset} 手续费
-                </Button>
               )}
             </div>
           </div>

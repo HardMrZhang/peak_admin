@@ -147,7 +147,8 @@ export async function sendSplTransfer(
     throw new Error('钱包不支持签名交易')
   }
 
-  await connection.confirmTransaction({ signature: sig, blockhash, lastValidBlockHeight }, 'confirmed')
+  connection.confirmTransaction({ signature: sig, blockhash, lastValidBlockHeight }, 'confirmed')
+    .catch(() => {})
 
   return { txHash: sig }
 }
