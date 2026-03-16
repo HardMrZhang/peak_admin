@@ -3,10 +3,10 @@ import {
   Card, Table, Button, Form, Input, Select, Tag, Space, message, Modal, Popconfirm, Typography, Descriptions, Tooltip,
 } from 'antd'
 import {
-  SearchOutlined, CheckCircleOutlined, CloseCircleOutlined, WarningOutlined, EyeOutlined,
+  SearchOutlined, CheckCircleOutlined, CloseCircleOutlined, WarningOutlined, EyeOutlined, SendOutlined,
 } from '@ant-design/icons'
 import {
-  getWithdraws, approveWithdraw, rejectWithdraw, markWithdrawRisk, batchApproveWithdraws, getWithdrawDetail,
+  getWithdraws, approveWithdraw, rejectWithdraw, markWithdrawRisk, batchApproveWithdraws, getWithdrawDetail, confirmWithdrawSend,
 } from '@/api/withdraw'
 
 const { Title, Text } = Typography
@@ -14,9 +14,10 @@ const { TextArea } = Input
 
 const statusMap: Record<string, { color: string; text: string }> = {
   PENDING_REVIEW: { color: 'processing', text: '待审核' },
-  PENDING_SEND: { color: 'success', text: '已通过' },
+  APPROVED: { color: 'orange', text: '待发送' },
+  PENDING_SEND: { color: 'cyan', text: '发送中' },
+  SENDING: { color: 'cyan', text: '发送中' },
   REJECTED: { color: 'error', text: '已拒绝' },
-  SENT: { color: 'cyan', text: '已发送' },
   SUCCESS: { color: 'green', text: '已完成' },
   FAILED: { color: 'red', text: '失败' },
 }
@@ -30,11 +31,15 @@ export default function WithdrawPage() {
   const [selectedRowKeys, setSelectedRowKeys] = useState<string[]>([])
   const [rejectVisible, setRejectVisible] = useState(false)
   const [riskVisible, setRiskVisible] = useState(false)
+  const [confirmVisible, setConfirmVisible] = useState(false)
   const [detailVisible, setDetailVisible] = useState(false)
   const [currentId, setCurrentId] = useState('')
+  const [currentRecord, setCurrentRecord] = useState<any>(null)
   const [detail, setDetail] = useState<any>(null)
   const [rejectReason, setRejectReason] = useState('')
   const [riskReason, setRiskReason] = useState('')
+  const [txHash, setTxHash] = useState('')
+  const [confirmLoading, setConfirmLoading] = useState(false)
   const [form] = Form.useForm()
 
   const shortText = (value?: string | null, head = 8, tail = 6) => {
@@ -113,6 +118,32 @@ export default function WithdrawPage() {
     } catch { /* empty */ }
   }
 
+  const openConfirmModal = (record: any) => {
+    setCurrentId(record.id)
+    setCurrentRecord(record)
+    setTxHash('')
+    setConfirmVisible(true)
+  }
+
+  const handleConfirmSend = async () => {
+    if (!txHash.trim() || txHash.trim().length < 20) {
+      message.warning('请输入有效的链上交易哈希')
+      return
+    }
+    setConfirmLoading(true)
+    try {
+      await confirmWithdrawSend(currentId, txHash.trim())
+      message.success('已确认发送，提现完成')
+      setConfirmVisible(false)
+      setTxHash('')
+      loadData(pagination.current, pagination.pageSize)
+    } catch {
+      /* empty */
+    } finally {
+      setConfirmLoading(false)
+    }
+  }
+
   const columns = [
     {
       title: '用户',
@@ -187,6 +218,16 @@ export default function WithdrawPage() {
               </Button>
               <Button type="link" size="small" icon={<WarningOutlined />} style={{ color: '#f59e0b' }} onClick={() => { setCurrentId(record.id); setRiskVisible(true) }}>
                 风险
+              </Button>
+            </>
+          )}
+          {record.status === 'APPROVED' && (
+            <>
+              <Button type="link" size="small" icon={<SendOutlined />} style={{ color: '#3b82f6' }} onClick={() => openConfirmModal(record)}>
+                确认发送
+              </Button>
+              <Button type="link" size="small" danger icon={<CloseCircleOutlined />} onClick={() => { setCurrentId(record.id); setRejectVisible(true) }}>
+                拒绝
               </Button>
             </>
           )}
@@ -281,6 +322,43 @@ export default function WithdrawPage() {
             {detail.rejectReason && <Descriptions.Item label="拒绝原因" span={2}>{detail.rejectReason}</Descriptions.Item>}
             {detail.riskReason && <Descriptions.Item label="风险原因" span={2}>{detail.riskReason}</Descriptions.Item>}
           </Descriptions>
+        )}
+      </Modal>
+
+      <Modal
+        title="确认发送"
+        open={confirmVisible}
+        onOk={handleConfirmSend}
+        onCancel={() => setConfirmVisible(false)}
+        confirmLoading={confirmLoading}
+        okText="确认完成"
+      >
+        {currentRecord && (
+          <div style={{ marginTop: 16 }}>
+            <Descriptions column={1} size="small" bordered>
+              <Descriptions.Item label="资产类型">{currentRecord.asset}</Descriptions.Item>
+              <Descriptions.Item label="到账金额">
+                <Text strong style={{ color: '#10b981' }}>{currentRecord.actualAmount} {currentRecord.asset}</Text>
+              </Descriptions.Item>
+              <Descriptions.Item label="手续费">{currentRecord.feeAmount} {currentRecord.asset}</Descriptions.Item>
+              <Descriptions.Item label="收款地址">
+                <Text copyable style={{ fontSize: 12 }}>{currentRecord.toAddress}</Text>
+              </Descriptions.Item>
+            </Descriptions>
+            <div style={{ marginTop: 16 }}>
+              <Text type="secondary" style={{ display: 'block', marginBottom: 8 }}>
+                请先用钱包将 <Text strong>{currentRecord.actualAmount} {currentRecord.asset}</Text> 转至上方收款地址，
+                手续费 <Text strong>{currentRecord.feeAmount} {currentRecord.asset}</Text> 转至手续费归集地址，
+                然后将链上交易哈希粘贴到下方：
+              </Text>
+              <Input
+                placeholder="请输入 Solana 链上交易哈希 (txHash)"
+                value={txHash}
+                onChange={(e) => setTxHash(e.target.value)}
+                allowClear
+              />
+            </div>
+          </div>
         )}
       </Modal>
     </div>
