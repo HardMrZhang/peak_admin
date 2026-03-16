@@ -2,7 +2,6 @@ import {
   Connection,
   PublicKey,
   Transaction,
-  type TransactionSignature,
 } from '@solana/web3.js'
 import {
   getAssociatedTokenAddressSync,
@@ -42,24 +41,29 @@ interface SolanaProvider {
   publicKey: PublicKey
   isConnected: boolean
   connect(): Promise<{ publicKey: PublicKey }>
-  signTransaction(tx: Transaction): Promise<Transaction>
+  signTransaction?(tx: Transaction): Promise<Transaction>
+  signAndSendTransaction?(tx: Transaction, opts?: Record<string, unknown>): Promise<{ signature: string }>
 }
 
 function getProvider(): SolanaProvider {
   const w = window as Record<string, unknown>
-  const provider = (w.phantom as Record<string, unknown>)?.solana as SolanaProvider
-    || w.solana as SolanaProvider
-    || (w.okxwallet as Record<string, unknown>)?.solana as SolanaProvider
+  const okx = (w.okxwallet as Record<string, unknown>)?.solana as SolanaProvider | undefined
+  const phantom = (w.phantom as Record<string, unknown>)?.solana as SolanaProvider | undefined
+  const generic = w.solana as SolanaProvider | undefined
+  const provider = okx || phantom || generic
   if (!provider) throw new Error('未检测到 Solana 钱包，请安装 Phantom 或 OKX 钱包')
   return provider
 }
 
 export async function connectWallet(): Promise<string> {
   const provider = getProvider()
-  if (!provider.isConnected) {
-    await provider.connect()
+  try {
+    const resp = await provider.connect()
+    return resp.publicKey.toBase58()
+  } catch {
+    if (provider.publicKey) return provider.publicKey.toBase58()
+    throw new Error('钱包连接失败')
   }
-  return provider.publicKey.toBase58()
 }
 
 async function ensureAtaExists(
@@ -128,11 +132,20 @@ export async function sendSplTransfer(
   tx.lastValidBlockHeight = lastValidBlockHeight
   tx.feePayer = fromPk
 
-  const signed = await provider.signTransaction(tx)
-  const sig: TransactionSignature = await connection.sendRawTransaction(signed.serialize(), {
-    skipPreflight: false,
-    preflightCommitment: 'confirmed',
-  })
+  let sig: string
+
+  if (provider.signAndSendTransaction) {
+    const result = await provider.signAndSendTransaction(tx, { preflightCommitment: 'confirmed' })
+    sig = result.signature
+  } else if (provider.signTransaction) {
+    const signed = await provider.signTransaction(tx)
+    sig = await connection.sendRawTransaction(signed.serialize(), {
+      skipPreflight: false,
+      preflightCommitment: 'confirmed',
+    })
+  } else {
+    throw new Error('钱包不支持签名交易')
+  }
 
   await connection.confirmTransaction({ signature: sig, blockhash, lastValidBlockHeight }, 'confirmed')
 
