@@ -8,6 +8,7 @@ import {
 import {
   getWithdraws, approveWithdraw, rejectWithdraw, markWithdrawRisk, batchApproveWithdraws, getWithdrawDetail, confirmWithdrawSend,
 } from '@/api/withdraw'
+import { sendSplTransfer, connectWallet, FEE_COLLECT_ADDRESS } from '@/utils/solana'
 
 const { Title, Text } = Typography
 const { TextArea } = Input
@@ -41,9 +42,9 @@ export default function WithdrawPage() {
   const [txHash, setTxHash] = useState('')
   const [feeTxHash, setFeeTxHash] = useState('')
   const [confirmLoading, setConfirmLoading] = useState(false)
+  const [sendingUser, setSendingUser] = useState(false)
+  const [sendingFee, setSendingFee] = useState(false)
   const [form] = Form.useForm()
-
-  const FEE_COLLECT_ADDRESS = 'EfQv2XvBGckvhDh2urjC6bjnvmjuE8f6wnA7ZHbBRRNL'
 
   const shortText = (value?: string | null, head = 8, tail = 6) => {
     if (!value) return '-'
@@ -121,23 +122,64 @@ export default function WithdrawPage() {
     } catch { /* empty */ }
   }
 
-  const openConfirmModal = (record: any) => {
+  const openConfirmModal = async (record: any) => {
     setCurrentId(record.id)
     setCurrentRecord(record)
     setTxHash('')
     setFeeTxHash('')
     setConfirmVisible(true)
+    try {
+      await connectWallet()
+    } catch (err: any) {
+      message.warning(err?.message || '钱包连接失败')
+    }
+  }
+
+  const handleSendToUser = async () => {
+    if (!currentRecord) return
+    setSendingUser(true)
+    try {
+      const result = await sendSplTransfer(
+        currentRecord.asset,
+        currentRecord.toAddress,
+        currentRecord.actualAmount,
+      )
+      setTxHash(result.txHash)
+      message.success('用户转账已发送')
+    } catch (err: any) {
+      message.error(err?.message || '转账失败')
+    } finally {
+      setSendingUser(false)
+    }
+  }
+
+  const handleSendFee = async () => {
+    if (!currentRecord) return
+    setSendingFee(true)
+    try {
+      const result = await sendSplTransfer(
+        currentRecord.asset,
+        FEE_COLLECT_ADDRESS,
+        currentRecord.feeAmount,
+      )
+      setFeeTxHash(result.txHash)
+      message.success('手续费转账已发送')
+    } catch (err: any) {
+      message.error(err?.message || '手续费转账失败')
+    } finally {
+      setSendingFee(false)
+    }
   }
 
   const handleConfirmSend = async () => {
     if (!txHash.trim() || txHash.trim().length < 20) {
-      message.warning('请输入有效的用户转账交易哈希')
+      message.warning('请先完成用户转账')
       return
     }
     setConfirmLoading(true)
     try {
       await confirmWithdrawSend(currentId, txHash.trim(), feeTxHash.trim() || undefined)
-      message.success('已确认发送，提现完成')
+      message.success('提现完成')
       setConfirmVisible(false)
       setTxHash('')
       setFeeTxHash('')
@@ -331,17 +373,22 @@ export default function WithdrawPage() {
       </Modal>
 
       <Modal
-        title="确认发送"
+        title="提现转账"
         open={confirmVisible}
         onOk={handleConfirmSend}
         onCancel={() => setConfirmVisible(false)}
         confirmLoading={confirmLoading}
         okText="确认完成"
+        okButtonProps={{ disabled: !txHash || !feeTxHash }}
+        width={560}
       >
         {currentRecord && (
           <div style={{ marginTop: 16 }}>
             <div style={{ background: '#f0f5ff', borderRadius: 8, padding: 16, marginBottom: 16 }}>
-              <Text strong style={{ fontSize: 14, display: 'block', marginBottom: 8 }}>第一步：转账给用户</Text>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
+                <Text strong style={{ fontSize: 14 }}>第一步：转账给用户</Text>
+                {txHash ? <Tag color="success">已完成</Tag> : <Tag color="processing">待转账</Tag>}
+              </div>
               <Descriptions column={1} size="small" bordered>
                 <Descriptions.Item label="转账金额">
                   <Text strong style={{ color: '#10b981', fontSize: 16 }}>{currentRecord.actualAmount} {currentRecord.asset}</Text>
@@ -350,19 +397,29 @@ export default function WithdrawPage() {
                   <Text copyable style={{ fontSize: 12 }}>{currentRecord.toAddress}</Text>
                 </Descriptions.Item>
               </Descriptions>
-              <div style={{ marginTop: 12 }}>
-                <Text type="secondary" style={{ display: 'block', marginBottom: 4 }}>交易哈希：</Text>
-                <Input
-                  placeholder="转给用户的 txHash"
-                  value={txHash}
-                  onChange={(e) => setTxHash(e.target.value)}
-                  allowClear
-                />
-              </div>
+              {txHash ? (
+                <div style={{ marginTop: 12 }}>
+                  <Text type="secondary">txHash：</Text>
+                  <Text copyable style={{ fontSize: 12, wordBreak: 'break-all' }}>{txHash}</Text>
+                </div>
+              ) : (
+                <Button
+                  type="primary"
+                  icon={<SendOutlined />}
+                  loading={sendingUser}
+                  onClick={handleSendToUser}
+                  style={{ marginTop: 12, width: '100%' }}
+                >
+                  发送 {currentRecord.actualAmount} {currentRecord.asset} 给用户
+                </Button>
+              )}
             </div>
 
             <div style={{ background: '#fff7e6', borderRadius: 8, padding: 16 }}>
-              <Text strong style={{ fontSize: 14, display: 'block', marginBottom: 8 }}>第二步：手续费归集</Text>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
+                <Text strong style={{ fontSize: 14 }}>第二步：手续费归集</Text>
+                {feeTxHash ? <Tag color="success">已完成</Tag> : <Tag color="warning">待转账</Tag>}
+              </div>
               <Descriptions column={1} size="small" bordered>
                 <Descriptions.Item label="手续费">
                   <Text strong style={{ color: '#f59e0b' }}>{currentRecord.feeAmount} {currentRecord.asset}</Text>
@@ -371,15 +428,23 @@ export default function WithdrawPage() {
                   <Text copyable style={{ fontSize: 12 }}>{FEE_COLLECT_ADDRESS}</Text>
                 </Descriptions.Item>
               </Descriptions>
-              <div style={{ marginTop: 12 }}>
-                <Text type="secondary" style={{ display: 'block', marginBottom: 4 }}>交易哈希（选填）：</Text>
-                <Input
-                  placeholder="手续费转账的 txHash（选填）"
-                  value={feeTxHash}
-                  onChange={(e) => setFeeTxHash(e.target.value)}
-                  allowClear
-                />
-              </div>
+              {feeTxHash ? (
+                <div style={{ marginTop: 12 }}>
+                  <Text type="secondary">txHash：</Text>
+                  <Text copyable style={{ fontSize: 12, wordBreak: 'break-all' }}>{feeTxHash}</Text>
+                </div>
+              ) : (
+                <Button
+                  type="default"
+                  icon={<SendOutlined />}
+                  loading={sendingFee}
+                  onClick={handleSendFee}
+                  disabled={!txHash}
+                  style={{ marginTop: 12, width: '100%', borderColor: '#f59e0b', color: sendingFee ? undefined : '#f59e0b' }}
+                >
+                  发送 {currentRecord.feeAmount} {currentRecord.asset} 手续费
+                </Button>
+              )}
             </div>
           </div>
         )}
