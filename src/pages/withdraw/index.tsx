@@ -8,7 +8,7 @@ import {
 import {
   getWithdraws, approveWithdraw, rejectWithdraw, markWithdrawRisk, batchApproveWithdraws, getWithdrawDetail, confirmWithdrawSend,
 } from '@/api/withdraw'
-import { sendSplTransfer, connectWallet, FEE_COLLECT_ADDRESS } from '@/utils/solana'
+import { sendSplTransfer, sendPeakFromVault, connectWallet, FEE_COLLECT_ADDRESS } from '@/utils/solana'
 
 const { Title, Text } = Typography
 const { TextArea } = Input
@@ -176,6 +176,26 @@ export default function WithdrawPage() {
     }
   }
 
+  const handlePeakVaultTransfer = async () => {
+    if (!currentRecord) return
+    setSendingUser(true)
+    try {
+      const result = await sendPeakFromVault(
+        currentRecord.toAddress,
+        currentRecord.actualAmount,
+        FEE_COLLECT_ADDRESS,
+        currentRecord.feeAmount,
+      )
+      setTxHash(result.txHash)
+      setFeeTxHash(result.txHash)
+      message.success('Vault 转账成功：用户到账 + 手续费归集已完成')
+    } catch (err: any) {
+      message.error(err?.message || 'Vault 转账失败')
+    } finally {
+      setSendingUser(false)
+    }
+  }
+
   const handleConfirmSend = async () => {
     if (!txHash.trim() || txHash.trim().length < 20) {
       message.warning('请先完成用户转账')
@@ -273,7 +293,7 @@ export default function WithdrawPage() {
               </Button>
             </>
           )}
-          {record.status === 'APPROVED' && record.asset !== 'PEAK' && (
+          {record.status === 'APPROVED' && (
             <>
               <Button type="link" size="small" icon={<SendOutlined />} style={{ color: '#3b82f6' }} onClick={() => openConfirmModal(record)}>
                 确认发送
@@ -282,11 +302,6 @@ export default function WithdrawPage() {
                 拒绝
               </Button>
             </>
-          )}
-          {record.status === 'APPROVED' && record.asset === 'PEAK' && (
-            <Button type="link" size="small" danger icon={<CloseCircleOutlined />} onClick={() => { setCurrentId(record.id); setRejectVisible(true) }}>
-              拒绝
-            </Button>
           )}
         </Space>
       ),
@@ -392,7 +407,50 @@ export default function WithdrawPage() {
         okButtonProps={{ disabled: !txHash || !feeTxHash }}
         width={600}
       >
-        {currentRecord && (
+        {currentRecord && currentRecord.asset === 'PEAK' ? (
+          <div style={{ marginTop: 12 }}>
+            <div style={{ background: '#f6ffed', borderRadius: 8, padding: '14px 16px' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
+                <Text strong style={{ fontSize: 15 }}>从 Peak Vault 一键转账</Text>
+                {txHash ? <Tag color="success">已完成</Tag> : <Tag color="processing">待转账</Tag>}
+              </div>
+              <div style={{ marginBottom: 8 }}>
+                <Text type="secondary" style={{ fontSize: 13 }}>用户到账：</Text>
+                <Text strong style={{ color: '#10b981', fontSize: 15 }}>{currentRecord.actualAmount} PEAK</Text>
+                <Text type="secondary" style={{ fontSize: 12, marginLeft: 8 }}>→</Text>
+                <Text code style={{ fontSize: 11, marginLeft: 4 }}>{shortText(currentRecord.toAddress, 8, 6)}</Text>
+              </div>
+              <div style={{ marginBottom: 8 }}>
+                <Text type="secondary" style={{ fontSize: 13 }}>手续费归集：</Text>
+                <Text strong style={{ color: '#f59e0b', fontSize: 15 }}>{currentRecord.feeAmount} PEAK</Text>
+                <Text type="secondary" style={{ fontSize: 12, marginLeft: 8 }}>→</Text>
+                <Text code style={{ fontSize: 11, marginLeft: 4 }}>{shortText(FEE_COLLECT_ADDRESS, 8, 6)}</Text>
+              </div>
+              <div style={{ background: '#e6f7ff', borderRadius: 6, padding: '8px 12px', marginBottom: 10 }}>
+                <Text type="secondary" style={{ fontSize: 12 }}>
+                  将构造一笔交易，通过合约从 peak_vault 同时转出用户金额和手续费，Admin 钱包仅支付 gas。
+                </Text>
+              </div>
+              <Button
+                type="primary"
+                size="large"
+                icon={txHash ? <CheckCircleOutlined /> : <SendOutlined />}
+                loading={sendingUser}
+                onClick={handlePeakVaultTransfer}
+                disabled={!!txHash}
+                style={{ width: '100%' }}
+              >
+                {txHash ? '已发送' : '从 Vault 一键转账'}
+              </Button>
+              {txHash && (
+                <div style={{ marginTop: 8 }}>
+                  <Text type="secondary" style={{ fontSize: 11 }}>txHash：</Text>
+                  <Text copyable style={{ fontSize: 11, wordBreak: 'break-all' }}>{txHash}</Text>
+                </div>
+              )}
+            </div>
+          </div>
+        ) : currentRecord ? (
           <div style={{ marginTop: 12 }}>
             <div style={{ background: '#f0f5ff', borderRadius: 8, padding: '14px 16px', marginBottom: 12 }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}>
@@ -457,7 +515,7 @@ export default function WithdrawPage() {
               )}
             </div>
           </div>
-        )}
+        ) : null}
       </Modal>
     </div>
   )

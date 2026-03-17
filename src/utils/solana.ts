@@ -2,6 +2,7 @@ import {
   Connection,
   PublicKey,
   Transaction,
+  TransactionInstruction,
 } from '@solana/web3.js'
 import {
   getAssociatedTokenAddressSync,
@@ -149,6 +150,124 @@ export async function sendSplTransfer(
       preflightCommitment: 'confirmed',
     })
     console.log('[solana] signTransaction + sendRaw -> sig:', sig)
+  } else {
+    throw new Error('钱包不支持签名交易')
+  }
+
+  if (!sig) {
+    throw new Error('钱包未返回交易签名，请检查控制台日志')
+  }
+
+  connection.confirmTransaction({ signature: sig, blockhash, lastValidBlockHeight }, 'confirmed')
+    .catch(() => {})
+
+  return { txHash: sig }
+}
+
+function findProgramPda(seed: string): PublicKey {
+  const [pda] = PublicKey.findProgramAddressSync(
+    [Buffer.from(seed)],
+    PEAK_PROGRAM_ID,
+  )
+  return pda
+}
+
+async function getInstructionDiscriminator(name: string): Promise<Uint8Array> {
+  const encoded = new TextEncoder().encode(`global:${name}`)
+  const hashBuffer = await crypto.subtle.digest('SHA-256', encoded)
+  return new Uint8Array(hashBuffer).slice(0, 8)
+}
+
+/**
+ * 从 peak_vault 转出 PEAK（admin_withdraw_vault 合约指令）
+ * 一笔交易同时完成用户转账 + 手续费归集
+ */
+export async function sendPeakFromVault(
+  toAddress: string,
+  actualAmount: string,
+  feeAddress: string | null,
+  feeAmount: string | null,
+): Promise<TransferResult> {
+  const provider = getProvider()
+  if (!provider.isConnected) {
+    await provider.connect()
+  }
+
+  const connection = getConnection()
+  const adminPk = provider.publicKey
+  const peakMint = getPeakMint()
+
+  const configPda = findProgramPda('config')
+  const peakVaultPda = findProgramPda('peak_vault')
+  const programAuthorityPda = findProgramPda('program_authority')
+  const discriminator = await getInstructionDiscriminator('admin_withdraw_vault')
+
+  const tx = new Transaction()
+
+  const toPk = new PublicKey(toAddress)
+  const destAta = await ensureAtaExists(connection, tx, adminPk, toPk, peakMint)
+
+  const userLamports = BigInt(Math.round(parseFloat(actualAmount) * (10 ** PEAK_DECIMALS)))
+  const userData = Buffer.alloc(16)
+  Buffer.from(discriminator).copy(userData, 0)
+  userData.writeBigUInt64LE(userLamports, 8)
+
+  tx.add(new TransactionInstruction({
+    programId: PEAK_PROGRAM_ID,
+    keys: [
+      { pubkey: adminPk, isSigner: true, isWritable: true },
+      { pubkey: configPda, isSigner: false, isWritable: false },
+      { pubkey: peakVaultPda, isSigner: false, isWritable: true },
+      { pubkey: programAuthorityPda, isSigner: false, isWritable: false },
+      { pubkey: destAta, isSigner: false, isWritable: true },
+      { pubkey: TOKEN_PROGRAM_ID, isSigner: false, isWritable: false },
+    ],
+    data: userData,
+  }))
+
+  if (feeAddress && feeAmount && parseFloat(feeAmount) > 0) {
+    const feePk = new PublicKey(feeAddress)
+    const feeAta = await ensureAtaExists(connection, tx, adminPk, feePk, peakMint)
+
+    const feeLamports = BigInt(Math.round(parseFloat(feeAmount) * (10 ** PEAK_DECIMALS)))
+    const feeData = Buffer.alloc(16)
+    Buffer.from(discriminator).copy(feeData, 0)
+    feeData.writeBigUInt64LE(feeLamports, 8)
+
+    tx.add(new TransactionInstruction({
+      programId: PEAK_PROGRAM_ID,
+      keys: [
+        { pubkey: adminPk, isSigner: true, isWritable: true },
+        { pubkey: configPda, isSigner: false, isWritable: false },
+        { pubkey: peakVaultPda, isSigner: false, isWritable: true },
+        { pubkey: programAuthorityPda, isSigner: false, isWritable: false },
+        { pubkey: feeAta, isSigner: false, isWritable: true },
+        { pubkey: TOKEN_PROGRAM_ID, isSigner: false, isWritable: false },
+      ],
+      data: feeData,
+    }))
+  }
+
+  const { blockhash, lastValidBlockHeight } = await connection.getLatestBlockhash('confirmed')
+  tx.recentBlockhash = blockhash
+  tx.lastValidBlockHeight = lastValidBlockHeight
+  tx.feePayer = adminPk
+
+  let sig: string
+
+  if (provider.signAndSendTransaction) {
+    const result = await provider.signAndSendTransaction(tx, { preflightCommitment: 'confirmed' })
+    const res = result as Record<string, unknown>
+    sig = (res.signature as string)
+      || (res.txid as string)
+      || (res.transactionHash as string)
+      || (typeof result === 'string' ? result : '')
+  } else if (provider.signTransaction) {
+    const signed = await provider.signTransaction(tx)
+    sig = await connection.sendRawTransaction(signed.serialize(), {
+      skipPreflight: false,
+      preflightCommitment: 'confirmed',
+    })
   } else {
     throw new Error('钱包不支持签名交易')
   }
