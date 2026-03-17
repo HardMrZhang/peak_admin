@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import {
-  Card, Table, Button, Modal, Form, InputNumber, Tag, Space, message, Popconfirm, Typography, Descriptions, Select, DatePicker,
+  Card, Table, Button, Modal, Form, InputNumber, Tag, Space, App, Popconfirm, Typography, Descriptions, Select, DatePicker,
 } from 'antd'
 import { PlusOutlined, EditOutlined, CheckCircleOutlined, SaveOutlined } from '@ant-design/icons'
 import type { NodeConfigStatus } from '@/api/nodeConfig'
@@ -27,6 +27,7 @@ const statusMap: Record<string, { color: string; text: string }> = {
 const statusOptions = Object.entries(statusMap).map(([k, v]) => ({ label: v.text, value: k }))
 
 export default function NodeConfigPage() {
+  const { message } = App.useApp()
   const [loading, setLoading] = useState(false)
   const [data, setData] = useState<any[]>([])
   const [activeConfig, setActiveConfig] = useState<any>(null)

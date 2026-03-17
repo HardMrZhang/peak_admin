@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import {
-  Card, Table, Button, Modal, Form, Input, Select, Tag, Space, message, Popconfirm, Typography,
+  Card, Table, Button, Modal, Form, Input, Select, Tag, Space, App, Popconfirm, Typography,
 } from 'antd'
 import { PlusOutlined, UserOutlined, EditOutlined } from '@ant-design/icons'
 import { getAdminUsers, createAdminUser, assignRoles, updateAdminStatus, getRoles } from '@/api/rbac'
@@ -8,6 +8,7 @@ import { getAdminUsers, createAdminUser, assignRoles, updateAdminStatus, getRole
 const { Title, Text } = Typography
 
 export default function AdminUsersPage() {
+  const { message } = App.useApp()
   const [loading, setLoading] = useState(false)
   const [data, setData] = useState<any[]>([])
   const [pagination, setPagination] = useState({ current: 1, pageSize: 10, total: 0 })

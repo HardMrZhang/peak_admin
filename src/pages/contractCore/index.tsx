@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { Button, Card, Col, Form, Input, InputNumber, Row, Space, Table, Typography, message } from 'antd'
+import { App, Button, Card, Col, Form, Input, InputNumber, Row, Space, Table, Typography } from 'antd'
 import {
   adminTransferNode,
   claimReferral,
@@ -16,6 +16,7 @@ import {
 const { Title, Text } = Typography
 
 export default function ContractCorePage() {
+  const { message } = App.useApp()
   const [coverage, setCoverage] = useState<any[]>([])
   const [inventory, setInventory] = useState<any>(null)
   const [loading, setLoading] = useState(false)

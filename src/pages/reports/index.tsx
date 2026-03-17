@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import {
-  Card, Tabs, Table, Button, Form, DatePicker, Select, Space, message, Typography, Tag, Modal, Tooltip,
+  Card, Tabs, Table, Button, Form, DatePicker, Select, Space, App, Typography, Tag, Modal, Tooltip,
 } from 'antd'
 import { DownloadOutlined, SearchOutlined } from '@ant-design/icons'
 import type { ExportTaskType } from '@/api/reports'
@@ -110,6 +110,7 @@ const exportTypeOptions: { label: string; value: ExportTaskType }[] = [
 ]
 
 export default function ReportsPage() {
+  const { message } = App.useApp()
   const [tab, setTab] = useState<TabKey>('user-assets')
   const [loading, setLoading] = useState(false)
   const [data, setData] = useState<any[]>([])

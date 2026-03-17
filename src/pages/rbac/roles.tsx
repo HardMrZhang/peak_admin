@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import {
-  Card, Table, Button, Modal, Form, Input, Tag, Space, message, Tree, Typography,
+  Card, Table, Button, Modal, Form, Input, Tag, Space, App, Tree, Typography,
 } from 'antd'
 import { PlusOutlined, EditOutlined, SafetyCertificateOutlined } from '@ant-design/icons'
 import { getRoles, createRole, updateRole, assignPermissions, getPermissions } from '@/api/rbac'
@@ -9,6 +9,7 @@ const { Title, Text } = Typography
 const { TextArea } = Input
 
 export default function RolesPage() {
+  const { message } = App.useApp()
   const [loading, setLoading] = useState(false)
   const [data, setData] = useState<any[]>([])
   const [permissions, setPermissions] = useState<any[]>([])

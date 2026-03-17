@@ -1,4 +1,4 @@
-import { Modal, Form, Input, message } from 'antd'
+import { Modal, Form, Input, App } from 'antd'
 import { changePassword } from '@/api/auth'
 
 interface Props {
@@ -7,6 +7,7 @@ interface Props {
 }
 
 export default function ChangePasswordModal({ visible, onClose }: Props) {
+  const { message } = App.useApp()
   const [form] = Form.useForm()
 
   const handleOk = async () => {

@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Form, Input, Button, Typography, message } from 'antd'
+import { Form, Input, Button, Typography, App } from 'antd'
 import { UserOutlined, LockOutlined, BlockOutlined } from '@ant-design/icons'
 import { login } from '@/api/auth'
 import { useAuthStore } from '@/store/auth'
@@ -8,6 +8,7 @@ import { useAuthStore } from '@/store/auth'
 const { Title, Text } = Typography
 
 export default function Login() {
+  const { message } = App.useApp()
   const navigate = useNavigate()
   const { setToken } = useAuthStore()
   const [loading, setLoading] = useState(false)

@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import {
-  Card, Table, Button, Form, Input, Select, Tag, Space, message, Modal, Popconfirm, Typography, Descriptions, Tooltip,
+  Card, Table, Button, Form, Input, Select, Tag, Space, App, Modal, Popconfirm, Typography, Descriptions, Tooltip,
 } from 'antd'
 import {
   SearchOutlined, CheckCircleOutlined, CloseCircleOutlined, WarningOutlined, EyeOutlined, SendOutlined,
@@ -26,6 +26,7 @@ const statusMap: Record<string, { color: string; text: string }> = {
 const statusOptions = Object.entries(statusMap).map(([k, v]) => ({ label: v.text, value: k }))
 
 export default function WithdrawPage() {
+  const { message } = App.useApp()
   const [loading, setLoading] = useState(false)
   const [data, setData] = useState<any[]>([])
   const [pagination, setPagination] = useState({ current: 1, pageSize: 10, total: 0 })

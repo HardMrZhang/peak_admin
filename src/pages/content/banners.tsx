@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import {
-  Card, Table, Button, Modal, Form, Input, InputNumber, Select, Tag, Space, message, Popconfirm, Typography, Image, Switch, DatePicker,
+  Card, Table, Button, Modal, Form, Input, InputNumber, Select, Tag, Space, App, Popconfirm, Typography, Image, Switch, DatePicker,
 } from 'antd'
 import { PlusOutlined, EditOutlined, DeleteOutlined, SearchOutlined } from '@ant-design/icons'
 import { getBanners, createBanner, updateBanner, deleteBanner, toggleBanner } from '@/api/content'
@@ -19,6 +19,7 @@ const mediaTypeOptions = [
 ]
 
 export default function BannersPage() {
+  const { message } = App.useApp()
   const [loading, setLoading] = useState(false)
   const [data, setData] = useState<any[]>([])
   const [pagination, setPagination] = useState({ current: 1, pageSize: 10, total: 0 })

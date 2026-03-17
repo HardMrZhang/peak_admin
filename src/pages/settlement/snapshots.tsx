@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { Card, Table, Form, DatePicker, Select, Button, Typography, Tag, Space, Modal, message } from 'antd'
+import { Card, Table, Form, DatePicker, Select, Button, Typography, Tag, Space, App } from 'antd'
 import { SearchOutlined, ThunderboltOutlined, UnlockOutlined } from '@ant-design/icons'
 import { getSnapshots, triggerSettle, triggerRelease } from '@/api/settlement'
 
@@ -13,6 +13,7 @@ const calcStatusMap: Record<string, { color: string; text: string }> = {
 const calcStatusOptions = Object.entries(calcStatusMap).map(([k, v]) => ({ label: v.text, value: k }))
 
 export default function SnapshotsPage() {
+  const { modal, message } = App.useApp()
   const [loading, setLoading] = useState(false)
   const [triggering, setTriggering] = useState(false)
   const [data, setData] = useState<any[]>([])
@@ -63,7 +64,7 @@ export default function SnapshotsPage() {
 
   const handleTrigger = (type: 'settle' | 'release') => {
     const label = type === 'settle' ? '结算补发' : '释放补发'
-    Modal.confirm({
+    modal.confirm({
       title: `确认${label}`,
       content: type === 'settle'
         ? '将补跑所有缺失天数的收益快照和分发，确认执行？'
