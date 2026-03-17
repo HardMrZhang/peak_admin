@@ -273,7 +273,7 @@ export default function WithdrawPage() {
               </Button>
             </>
           )}
-          {record.status === 'APPROVED' && (
+          {record.status === 'APPROVED' && record.asset !== 'PEAK' && (
             <>
               <Button type="link" size="small" icon={<SendOutlined />} style={{ color: '#3b82f6' }} onClick={() => openConfirmModal(record)}>
                 确认发送
@@ -282,6 +282,11 @@ export default function WithdrawPage() {
                 拒绝
               </Button>
             </>
+          )}
+          {record.status === 'APPROVED' && record.asset === 'PEAK' && (
+            <Button type="link" size="small" danger icon={<CloseCircleOutlined />} onClick={() => { setCurrentId(record.id); setRejectVisible(true) }}>
+              拒绝
+            </Button>
           )}
         </Space>
       ),
