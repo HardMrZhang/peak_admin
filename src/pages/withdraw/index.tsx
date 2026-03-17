@@ -76,16 +76,22 @@ export default function WithdrawPage() {
 
   useEffect(() => { loadData() }, [])
 
-  const handleApprove = async (id: string) => {
+  const handleApprove = async (id: string, asset?: string) => {
     try {
+      if (asset === 'PEAK') {
+        message.loading({ content: 'PEAK 自动出款中，请等待链上确认...', key: 'peakAuto', duration: 0 })
+      }
       const res: any = await approveWithdraw(id)
       if (res?.data?.status === 'SUCCESS') {
-        message.success('已通过，PEAK 已自动出款')
+        message.success({ content: `已通过，PEAK 已从 Vault 自动出款 (tx: ${res.data.txHash?.slice(0, 12)}...)`, key: 'peakAuto', duration: 5 })
       } else {
         message.success('已通过')
       }
       loadData(pagination.current, pagination.pageSize)
-    } catch { /* empty */ }
+    } catch (err: any) {
+      message.destroy('peakAuto')
+      message.error(err?.response?.data?.message || err?.message || '审批失败')
+    }
   }
 
   const handleReject = async () => {
@@ -282,7 +288,7 @@ export default function WithdrawPage() {
           <Button type="link" size="small" icon={<EyeOutlined />} onClick={() => handleViewDetail(record.id)}>详情</Button>
           {record.status === 'PENDING_REVIEW' && (
             <>
-              <Popconfirm title="确认通过？" onConfirm={() => handleApprove(record.id)}>
+              <Popconfirm title={record.asset === 'PEAK' ? '确认通过？PEAK 将自动从 Vault 出款' : '确认通过？'} onConfirm={() => handleApprove(record.id, record.asset)}>
                 <Button type="link" size="small" icon={<CheckCircleOutlined />} style={{ color: '#10b981' }}>通过</Button>
               </Popconfirm>
               <Button type="link" size="small" danger icon={<CloseCircleOutlined />} onClick={() => { setCurrentId(record.id); setRejectVisible(true) }}>
@@ -295,9 +301,11 @@ export default function WithdrawPage() {
           )}
           {record.status === 'APPROVED' && (
             <>
-              <Button type="link" size="small" icon={<SendOutlined />} style={{ color: '#3b82f6' }} onClick={() => openConfirmModal(record)}>
-                确认发送
-              </Button>
+              {record.asset !== 'PEAK' && (
+                <Button type="link" size="small" icon={<SendOutlined />} style={{ color: '#3b82f6' }} onClick={() => openConfirmModal(record)}>
+                  确认发送
+                </Button>
+              )}
               <Button type="link" size="small" danger icon={<CloseCircleOutlined />} onClick={() => { setCurrentId(record.id); setRejectVisible(true) }}>
                 拒绝
               </Button>

@@ -250,19 +250,6 @@ export async function sendPeakFromVault(
   tx.lastValidBlockHeight = lastValidBlockHeight
   tx.feePayer = adminPk
 
-  console.log('[vault] admin:', adminPk.toBase58())
-  console.log('[vault] config:', configPda.toBase58())
-  console.log('[vault] peak_vault:', peakVaultPda.toBase58())
-  console.log('[vault] program_authority:', programAuthorityPda.toBase58())
-  console.log('[vault] peakMint:', peakMint.toBase58())
-  console.log('[vault] programId:', PEAK_PROGRAM_ID.toBase58())
-
-  const simResult = await connection.simulateTransaction(tx)
-  console.log('[vault] simulate result:', JSON.stringify(simResult.value))
-  if (simResult.value.err) {
-    throw new Error(`交易模拟失败: ${JSON.stringify(simResult.value.err)} | logs: ${simResult.value.logs?.join('\n')}`)
-  }
-
   let sig: string
 
   if (provider.signAndSendTransaction) {
