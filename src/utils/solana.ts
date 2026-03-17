@@ -46,7 +46,7 @@ interface SolanaProvider {
 }
 
 function getProvider(): SolanaProvider {
-  const w = window as Record<string, unknown>
+  const w = window as unknown as Record<string, unknown>
   const okx = (w.okxwallet as Record<string, unknown>)?.solana as SolanaProvider | undefined
   const phantom = (w.phantom as Record<string, unknown>)?.solana as SolanaProvider | undefined
   const generic = w.solana as SolanaProvider | undefined
@@ -136,9 +136,10 @@ export async function sendSplTransfer(
 
   if (provider.signAndSendTransaction) {
     const result = await provider.signAndSendTransaction(tx, { preflightCommitment: 'confirmed' })
-    sig = (result as any)?.signature
-      || (result as any)?.txid
-      || (result as any)?.transactionHash
+    const res = result as Record<string, unknown>
+    sig = (res.signature as string)
+      || (res.txid as string)
+      || (res.transactionHash as string)
       || (typeof result === 'string' ? result : '')
     console.log('[solana] signAndSendTransaction result:', JSON.stringify(result), '-> sig:', sig)
   } else if (provider.signTransaction) {

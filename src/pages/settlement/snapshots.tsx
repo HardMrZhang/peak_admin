@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
-import { Card, Table, Form, DatePicker, Select, Button, Typography, Tag } from 'antd'
-import { SearchOutlined } from '@ant-design/icons'
-import { getSnapshots } from '@/api/settlement'
+import { Card, Table, Form, DatePicker, Select, Button, Typography, Tag, Space, Modal, message } from 'antd'
+import { SearchOutlined, ThunderboltOutlined, UnlockOutlined } from '@ant-design/icons'
+import { getSnapshots, triggerSettle, triggerRelease } from '@/api/settlement'
 
 const { Title, Text } = Typography
 const calcStatusMap: Record<string, { color: string; text: string }> = {
@@ -14,6 +14,7 @@ const calcStatusOptions = Object.entries(calcStatusMap).map(([k, v]) => ({ label
 
 export default function SnapshotsPage() {
   const [loading, setLoading] = useState(false)
+  const [triggering, setTriggering] = useState(false)
   const [data, setData] = useState<any[]>([])
   const [pagination, setPagination] = useState({ current: 1, pageSize: 10, total: 0 })
   const [form] = Form.useForm()
@@ -60,11 +61,53 @@ export default function SnapshotsPage() {
     },
   ]
 
+  const handleTrigger = (type: 'settle' | 'release') => {
+    const label = type === 'settle' ? '结算补发' : '释放补发'
+    Modal.confirm({
+      title: `确认${label}`,
+      content: type === 'settle'
+        ? '将补跑所有缺失天数的收益快照和分发，确认执行？'
+        : '将补跑所有待释放的奖励，确认执行？',
+      okText: '确认执行',
+      cancelText: '取消',
+      onOk: async () => {
+        setTriggering(true)
+        try {
+          await (type === 'settle' ? triggerSettle() : triggerRelease())
+          message.success(`${label}任务已提交，请稍后刷新查看结果`)
+          setTimeout(() => loadData(), 3000)
+        } catch {
+          message.error(`${label}任务提交失败`)
+        } finally {
+          setTriggering(false)
+        }
+      },
+    })
+  }
+
   return (
     <div className="page-container">
-      <div className="page-header">
-        <Title level={4} style={{ margin: 0 }}>奖励快照</Title>
-        <Text type="secondary">每日节点奖励计算快照</Text>
+      <div className="page-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+        <div>
+          <Title level={4} style={{ margin: 0 }}>奖励快照</Title>
+          <Text type="secondary">每日节点奖励计算快照</Text>
+        </div>
+        <Space>
+          <Button
+            icon={<ThunderboltOutlined />}
+            loading={triggering}
+            onClick={() => handleTrigger('settle')}
+          >
+            结算补发
+          </Button>
+          <Button
+            icon={<UnlockOutlined />}
+            loading={triggering}
+            onClick={() => handleTrigger('release')}
+          >
+            释放补发
+          </Button>
+        </Space>
       </div>
 
       <Card bordered={false} className="filter-card" style={{ borderRadius: 12 }}>
