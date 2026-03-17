@@ -172,11 +172,8 @@ function findProgramPda(seed: string): PublicKey {
   return pda
 }
 
-async function getInstructionDiscriminator(name: string): Promise<Uint8Array> {
-  const encoded = new TextEncoder().encode(`global:${name}`)
-  const hashBuffer = await crypto.subtle.digest('SHA-256', encoded)
-  return new Uint8Array(hashBuffer).slice(0, 8)
-}
+// sha256("global:admin_withdraw_vault")[0..8]
+const ADMIN_WITHDRAW_VAULT_DISC = new Uint8Array([104, 13, 82, 172, 52, 229, 136, 35])
 
 /**
  * 从 peak_vault 转出 PEAK（admin_withdraw_vault 合约指令）
@@ -200,7 +197,7 @@ export async function sendPeakFromVault(
   const configPda = findProgramPda('config')
   const peakVaultPda = findProgramPda('peak_vault')
   const programAuthorityPda = findProgramPda('program_authority')
-  const discriminator = await getInstructionDiscriminator('admin_withdraw_vault')
+  const discriminator = ADMIN_WITHDRAW_VAULT_DISC
 
   const tx = new Transaction()
 
