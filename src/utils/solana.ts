@@ -20,12 +20,10 @@ const PEAK_DECIMALS = 9
 
 export const FEE_COLLECT_ADDRESS = 'EfQv2XvBGckvhDh2urjC6bjnvmjuE8f6wnA7ZHbBRRNL'
 
+const PEAK_MINT = new PublicKey('24NSBvTN5oPhSDPorMNGrLFJcqor9hdPZm3AqKBVXDWy')
+
 function getPeakMint(): PublicKey {
-  const [pda] = PublicKey.findProgramAddressSync(
-    [Buffer.from('peak_mint')],
-    PEAK_PROGRAM_ID,
-  )
-  return pda
+  return PEAK_MINT
 }
 
 function getMintAndDecimals(asset: string): { mint: PublicKey; decimals: number } {
