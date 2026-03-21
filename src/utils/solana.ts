@@ -12,7 +12,7 @@ import {
   ASSOCIATED_TOKEN_PROGRAM_ID,
 } from '@solana/spl-token'
 
-const RPC_URL = 'https://solana-mainnet.g.alchemy.com/v2/_bpe84QwRZ3v_M06Go7WhKA2z6mOR4hy'
+const RPC_URL = 'https://mainnet.helius-rpc.com/?api-key=fc56707a-a30e-4676-9895-b5c37cbba6a2'
 const USDT_MINT = new PublicKey('Es9vMFrzaCERmJfrF4H2FYD4KCoNkY11McCe8BenwNYB')
 const PEAK_PROGRAM_ID = new PublicKey('92MB3SxG4ovKwRb8M4VtTPijA1CzxGo9eiZL2TgfNHxE')
 const USDT_DECIMALS = 6
@@ -74,13 +74,25 @@ async function ensureAtaExists(
 ): Promise<PublicKey> {
   const ata = getAssociatedTokenAddressSync(mint, owner, true, TOKEN_PROGRAM_ID)
   try {
-    await connection.getTokenAccountBalance(ata)
-  } catch {
-    tx.add(
-      createAssociatedTokenAccountInstruction(
-        payer, ata, owner, mint, TOKEN_PROGRAM_ID, ASSOCIATED_TOKEN_PROGRAM_ID,
-      ),
-    )
+    const info = await connection.getAccountInfo(ata)
+    if (!info) {
+      tx.add(
+        createAssociatedTokenAccountInstruction(
+          payer, ata, owner, mint, TOKEN_PROGRAM_ID, ASSOCIATED_TOKEN_PROGRAM_ID,
+        ),
+      )
+    }
+  } catch (err: unknown) {
+    const msg = err instanceof Error ? err.message : String(err)
+    if (msg.includes('429') || msg.includes('Too many') || msg.includes('Timed out')) {
+      console.warn('RPC rate limited checking ATA, skipping create instruction')
+    } else {
+      tx.add(
+        createAssociatedTokenAccountInstruction(
+          payer, ata, owner, mint, TOKEN_PROGRAM_ID, ASSOCIATED_TOKEN_PROGRAM_ID,
+        ),
+      )
+    }
   }
   return ata
 }
