@@ -45,6 +45,7 @@ export default function WithdrawPage() {
   const [confirmLoading, setConfirmLoading] = useState(false)
   const [sendingUser, setSendingUser] = useState(false)
   const [sendingFee, setSendingFee] = useState(false)
+  const [connectedAddr, setConnectedAddr] = useState('')
   const [form] = Form.useForm()
 
   const shortText = (value?: string | null, head = 8, tail = 6) => {
@@ -132,7 +133,8 @@ export default function WithdrawPage() {
     setFeeTxHash('')
     setConfirmVisible(true)
     try {
-      await connectWallet()
+      const addr = await connectWallet()
+      setConnectedAddr(addr)
     } catch (err: any) {
       message.warning(err?.message || '钱包连接失败')
     }
@@ -391,6 +393,12 @@ export default function WithdrawPage() {
       >
         {currentRecord ? (
           <div style={{ marginTop: 12 }}>
+            {connectedAddr && (
+              <div style={{ background: '#e6f7e6', borderRadius: 8, padding: '10px 16px', marginBottom: 12, fontSize: 13 }}>
+                <Text type="secondary">当前连接钱包：</Text>
+                <Text copyable strong style={{ wordBreak: 'break-all' }}>{connectedAddr}</Text>
+              </div>
+            )}
             <div style={{ background: '#f0f5ff', borderRadius: 8, padding: '14px 16px', marginBottom: 12 }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}>
                 <Text strong>第一步：转账给用户</Text>
