@@ -121,6 +121,24 @@ export async function sendSplTransfer(
   const lamports = BigInt(Math.round(parseFloat(amount) * (10 ** decimals)))
 
   const sourceAta = getAssociatedTokenAddressSync(mint, fromPk, true, TOKEN_PROGRAM_ID)
+  const sourceBalance = await connection.getTokenAccountBalance(sourceAta).catch(() => null)
+  if (!sourceBalance) {
+    throw new Error(`当前钱包缺少 ${asset} 代币账户，请先在钱包里创建/接收一次 ${asset}`)
+  }
+  const sourceRaw = BigInt(sourceBalance.value.amount || '0')
+  if (sourceRaw < lamports) {
+    const need = Number(lamports) / (10 ** decimals)
+    const has = Number(sourceRaw) / (10 ** decimals)
+    throw new Error(`当前钱包 ${asset} 余额不足：可用 ${has}，需要 ${need}`)
+  }
+  console.log('[solana] transfer precheck', {
+    asset,
+    from: fromPk.toBase58(),
+    to: toPk.toBase58(),
+    sourceAta: sourceAta.toBase58(),
+    sourceBalanceRaw: sourceBalance.value.amount,
+    amountRaw: lamports.toString(),
+  })
 
   const tx = new Transaction()
   const destAta = await ensureAtaExists(connection, tx, fromPk, toPk, mint)
