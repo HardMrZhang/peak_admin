@@ -65,6 +65,17 @@ export async function connectWallet(): Promise<string> {
   }
 }
 
+async function getCurrentWalletPublicKey(provider: SolanaProvider): Promise<PublicKey> {
+  try {
+    const resp = await provider.connect()
+    if (resp?.publicKey) return resp.publicKey
+  } catch {
+    // ignore and fallback to injected key
+  }
+  if (provider.publicKey) return provider.publicKey
+  throw new Error('无法获取当前钱包地址，请在钱包中重新连接站点')
+}
+
 async function ensureAtaExists(
   connection: Connection,
   tx: Transaction,
@@ -110,13 +121,10 @@ export async function sendSplTransfer(
   amount: string,
 ): Promise<TransferResult> {
   const provider = getProvider()
-  if (!provider.isConnected) {
-    await provider.connect()
-  }
+  const fromPk = await getCurrentWalletPublicKey(provider)
 
   const connection = getConnection()
   const { mint, decimals } = getMintAndDecimals(asset)
-  const fromPk = provider.publicKey
   const toPk = new PublicKey(toAddress)
   const lamports = BigInt(Math.round(parseFloat(amount) * (10 ** decimals)))
 
@@ -129,7 +137,7 @@ export async function sendSplTransfer(
   if (sourceRaw < lamports) {
     const need = Number(lamports) / (10 ** decimals)
     const has = Number(sourceRaw) / (10 ** decimals)
-    throw new Error(`当前钱包 ${asset} 余额不足：可用 ${has}，需要 ${need}`)
+    throw new Error(`当前钱包 ${fromPk.toBase58()} 的 ${asset} 余额不足：可用 ${has}，需要 ${need}`)
   }
   console.log('[solana] transfer precheck', {
     asset,
@@ -214,12 +222,8 @@ export async function sendPeakFromVault(
   feeAmount: string | null,
 ): Promise<TransferResult> {
   const provider = getProvider()
-  if (!provider.isConnected) {
-    await provider.connect()
-  }
-
   const connection = getConnection()
-  const adminPk = provider.publicKey
+  const adminPk = await getCurrentWalletPublicKey(provider)
   const peakMint = getPeakMint()
 
   const configPda = findProgramPda('config')
