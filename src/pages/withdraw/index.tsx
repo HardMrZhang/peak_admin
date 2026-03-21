@@ -423,12 +423,16 @@ export default function WithdrawPage() {
               >
                 {txHash ? '已发送' : `发送 ${currentRecord.actualAmount} ${currentRecord.asset} 给用户`}
               </Button>
-              {txHash && (
-                <div style={{ marginTop: 6 }}>
-                  <Text type="secondary" style={{ fontSize: 11 }}>txHash：</Text>
-                  <Text copyable style={{ fontSize: 11, wordBreak: 'break-all' }}>{txHash}</Text>
-                </div>
-              )}
+              <div style={{ marginTop: 6 }}>
+                <Text type="secondary" style={{ fontSize: 11 }}>txHash（已转账可手动填入）：</Text>
+                <Input
+                  size="small"
+                  value={txHash}
+                  onChange={(e) => setTxHash(e.target.value.trim())}
+                  placeholder="粘贴链上交易哈希"
+                  style={{ fontSize: 11, marginTop: 2 }}
+                />
+              </div>
             </div>
 
             {Number(currentRecord.feeAmount) > 0 ? (
@@ -455,12 +459,16 @@ export default function WithdrawPage() {
                 >
                   {feeTxHash ? '已发送' : `发送 ${currentRecord.feeAmount} ${currentRecord.asset} 手续费`}
                 </Button>
-                {feeTxHash && (
-                  <div style={{ marginTop: 6 }}>
-                    <Text type="secondary" style={{ fontSize: 11 }}>txHash：</Text>
-                    <Text copyable style={{ fontSize: 11, wordBreak: 'break-all' }}>{feeTxHash}</Text>
-                  </div>
-                )}
+                <div style={{ marginTop: 6 }}>
+                  <Text type="secondary" style={{ fontSize: 11 }}>txHash（已转账可手动填入）：</Text>
+                  <Input
+                    size="small"
+                    value={feeTxHash}
+                    onChange={(e) => setFeeTxHash(e.target.value.trim())}
+                    placeholder="粘贴链上交易哈希"
+                    style={{ fontSize: 11, marginTop: 2 }}
+                  />
+                </div>
               </div>
             ) : (
               <div style={{ background: '#f6ffed', borderRadius: 8, padding: '12px 16px' }}>
