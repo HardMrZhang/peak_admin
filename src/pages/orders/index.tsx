@@ -52,7 +52,7 @@ export default function OrdersPage() {
     const f: Record<string, any> = {}
     if (values.orderNo) f.orderNo = values.orderNo
     if (values.status) f.status = values.status
-    if (values.userId) f.userId = values.userId
+    if (values.walletAddress) f.walletAddress = values.walletAddress
     if (values.dateRange) {
       f.startDate = values.dateRange[0].format('YYYY-MM-DD')
       f.endDate = values.dateRange[1].format('YYYY-MM-DD')
@@ -133,7 +133,7 @@ export default function OrdersPage() {
       <Card bordered={false} className="filter-card" style={{ borderRadius: 12 }}>
         <Form form={form} layout="inline" onFinish={handleSearch}>
           <Form.Item name="orderNo"><Input placeholder="订单号" allowClear /></Form.Item>
-          <Form.Item name="userId"><Input placeholder="用户ID" allowClear /></Form.Item>
+          <Form.Item name="walletAddress"><Input placeholder="用户钱包地址" allowClear style={{ width: 200 }} /></Form.Item>
           <Form.Item name="status">
             <Select placeholder="状态" allowClear style={{ width: 120 }} options={statusOptions} />
           </Form.Item>

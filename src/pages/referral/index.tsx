@@ -19,7 +19,8 @@ export default function ReferralPage() {
     try {
       const values = form.getFieldsValue()
       const params: Record<string, any> = { page, pageSize }
-      if (values.userId) params.userId = values.userId
+      if (values.walletAddress) params.walletAddress = values.walletAddress
+      if (values.referrerInviteCode) params.referrerInviteCode = values.referrerInviteCode
       const res: any = await getReferralRelationships(params)
       setData(res.data?.list || [])
       setPagination({ current: page, pageSize, total: res.data?.total || 0 })
@@ -33,8 +34,8 @@ export default function ReferralPage() {
     try {
       const values = form.getFieldsValue()
       const params: Record<string, any> = { page, pageSize }
-      if (values.toUserId) params.toUserId = values.toUserId
-      if (values.fromUserId) params.fromUserId = values.fromUserId
+      if (values.fromUserWallet) params.fromUserWallet = values.fromUserWallet
+      if (values.toUserWallet) params.toUserWallet = values.toUserWallet
       if (values.status) params.status = values.status
       const res: any = await getReferralRewards(params)
       setData(res.data?.list || [])
@@ -163,16 +164,19 @@ export default function ReferralPage() {
       <Card bordered={false} className="filter-card" style={{ borderRadius: 12 }}>
         <Form form={form} layout="inline" onFinish={() => loadData()}>
           {tab === 'relationships' ? (
-            <Form.Item name="userId"><Input placeholder="用户ID" allowClear /></Form.Item>
+            <>
+              <Form.Item name="walletAddress"><Input placeholder="用户钱包地址" allowClear style={{ width: 200 }} /></Form.Item>
+              <Form.Item name="referrerInviteCode"><Input placeholder="推荐人邀请码" allowClear style={{ width: 150 }} /></Form.Item>
+            </>
           ) : (
             <>
-              <Form.Item name="toUserId"><Input placeholder="推荐人ID" allowClear /></Form.Item>
-              <Form.Item name="fromUserId"><Input placeholder="被推荐人ID" allowClear /></Form.Item>
+              <Form.Item name="fromUserWallet"><Input placeholder="推荐人钱包地址" allowClear style={{ width: 200 }} /></Form.Item>
+              <Form.Item name="toUserWallet"><Input placeholder="被推荐人钱包地址" allowClear style={{ width: 200 }} /></Form.Item>
               <Form.Item name="status">
                 <Select
                   placeholder="状态"
                   allowClear
-                  style={{ width: 180 }}
+                  style={{ width: 120 }}
                   options={[
                     { label: '待发放', value: 'PENDING' },
                     { label: '已发放', value: 'CONFIRMED' },

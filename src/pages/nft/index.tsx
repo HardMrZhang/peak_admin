@@ -25,7 +25,7 @@ export default function NftPage() {
     try {
       const values = form.getFieldsValue()
       const params: Record<string, any> = { page, pageSize }
-      if (values.userId) params.userId = values.userId
+      if (values.walletAddress) params.walletAddress = values.walletAddress
       if (values.status !== undefined && values.status !== null) params.status = values.status
       const res: any = await getNftRecords(params)
       setData(res.data?.list || [])
@@ -121,7 +121,7 @@ export default function NftPage() {
 
       <Card bordered={false} className="filter-card" style={{ borderRadius: 12 }}>
         <Form form={form} layout="inline" onFinish={() => loadData()}>
-          <Form.Item name="userId"><Input placeholder="用户ID" allowClear /></Form.Item>
+          <Form.Item name="walletAddress"><Input placeholder="用户钱包地址" allowClear style={{ width: 200 }} /></Form.Item>
           <Form.Item name="status">
             <Select placeholder="状态" allowClear style={{ width: 120 }} options={Object.entries(statusMap).map(([k, v]) => ({ label: v.text, value: k }))} />
           </Form.Item>
