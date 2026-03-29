@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import {
-  Card, Tabs, Table, Button, Form, DatePicker, Select, Space, App, Typography, Tag, Modal, Tooltip,
+  Card, Tabs, Table, Button, Form, DatePicker, Input, Select, Space, App, Typography, Tag, Modal, Tooltip,
 } from 'antd'
 import { DownloadOutlined, SearchOutlined } from '@ant-design/icons'
 import type { ExportTaskType } from '@/api/reports'
@@ -130,6 +130,9 @@ export default function ReportsPage() {
         params.startDate = values.dateRange[0].format('YYYY-MM-DD')
         params.endDate = values.dateRange[1].format('YYYY-MM-DD')
       }
+      if (tab === 'user-assets' && values.walletAddress) {
+        params.walletAddress = values.walletAddress
+      }
       const res: any = await tabConfig[tab].fetcher(params)
       const payload = res.data || {}
       const list = payload.list || payload.items || []
@@ -217,7 +220,14 @@ export default function ReportsPage() {
 
       <Card bordered={false} className="filter-card" style={{ borderRadius: 12 }}>
         <Form form={form} layout="inline" onFinish={() => loadData()}>
-          <Form.Item name="dateRange"><RangePicker /></Form.Item>
+          {tab === 'user-assets' && (
+            <Form.Item name="walletAddress">
+              <Input placeholder="钱包地址" allowClear style={{ width: 220 }} />
+            </Form.Item>
+          )}
+          {tab !== 'user-assets' && (
+            <Form.Item name="dateRange"><RangePicker /></Form.Item>
+          )}
           <Form.Item><Button type="primary" htmlType="submit" icon={<SearchOutlined />}>查询</Button></Form.Item>
           <Form.Item><Button onClick={() => { form.resetFields(); loadData() }}>重置</Button></Form.Item>
         </Form>
