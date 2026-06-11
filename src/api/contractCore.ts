@@ -42,7 +42,7 @@ export function adminTransferNode(receiverWallet: string) {
 
 // ===== PEAK DApp（operator 记账 / admin 治理）=====
 
-/** 给用户链上账本写可提额度；bucket: 0=released 1=airdrop 2=promo 3=t7 */
+/** 给用户链上账本写可提额度；bucket: 1=airdrop 2=promo 3=t7 */
 export function creditUser(data: { user: string; bucket: number; amount: string }) {
   return request.post('/contract-core/credit-user', data)
 }

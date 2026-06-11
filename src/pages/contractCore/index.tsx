@@ -28,9 +28,7 @@ const DAPP_CONFIG_FIELDS: Array<{ key: string; label: string; kind: 'pubkey' | '
   // —— 角色 / 钱包 / 金库 ——
   { key: 'operator', label: 'operator 记账热钱包', kind: 'pubkey' },
   { key: 'marketWallet', label: '市场运营 11% 钱包（建议多签）', kind: 'pubkey' },
-  { key: 'feeWallet', label: '固定 5 枚手续费收款', kind: 'pubkey' },
   { key: 'airdropPoolVault', label: '空投池金库', kind: 'pubkey' },
-  { key: 'releasedVault', label: '已释放提现金库', kind: 'pubkey' },
   { key: 'promoWallet', label: '1推5 推广分红金库', kind: 'pubkey' },
   { key: 't7Vault', label: 'T7 分红金库', kind: 'pubkey' },
   { key: 'stake15dVault', label: '15天质押池金库', kind: 'pubkey' },
@@ -48,8 +46,7 @@ const DAPP_CONFIG_FIELDS: Array<{ key: string; label: string; kind: 'pubkey' | '
   { key: 'airdropMinUsdt', label: '最低参与门槛 USDT-6位（100U=100000000；0=不限）', kind: 'u64' },
   { key: 'airdropTotalMultiplier', label: '空投总量倍数（默认 3）', kind: 'u64' },
   // —— 提现费率 ——
-  { key: 'releasedWithdrawFixedFee', label: '已释放固定手续费 PEAK-9位（5枚=5000000000）', kind: 'u64' },
-  { key: 'airdropWithdrawFeeBps', label: '已空投提现总费率 bps（2000=20%）', kind: 'u64' },
+  { key: 'airdropWithdrawFeeBps', label: '提现总费率 bps（2000=20%）', kind: 'u64' },
   { key: 'feeMarketBps', label: '手续费-市场 bps（1100=11%）', kind: 'u64' },
   { key: 'feePromoBps', label: '手续费-推广 bps（200=2%）', kind: 'u64' },
   { key: 'feeStake15dBps', label: '手续费-15天池 bps（60=0.6%）', kind: 'u64' },
@@ -252,8 +249,7 @@ export default function ContractCorePage() {
                   placeholder="额度桶"
                   style={{ width: '100%' }}
                   options={[
-                    { value: 0, label: '0 - 已释放提现（released，股东节点 5 枚固定费）' },
-                    { value: 1, label: '1 - 已空投提现（airdrop，20% 七份拆分）' },
+                    { value: 1, label: '1 - 空投收益提现（airdrop，20% 七份拆分）' },
                     { value: 2, label: '2 - 推广分红（promo）' },
                     { value: 3, label: '3 - T7 加权分红（t7）' },
                   ]}
