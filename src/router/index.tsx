@@ -12,6 +12,7 @@ import NftPage from '@/pages/nft'
 import ReportsPage from '@/pages/reports'
 import BannersPage from '@/pages/content/banners'
 import PlatformWalletPage from '@/pages/platformWallet'
+import ContractCorePage from '@/pages/contractCore'
 
 const router = createBrowserRouter([
   {
@@ -29,7 +30,7 @@ const router = createBrowserRouter([
       { path: 'orders', element: <OrdersPage /> },
       { path: 'orders/:id', element: <OrderDetailPage /> },
       { path: 'settlement/snapshots', element: <SnapshotsPage /> },
-      { path: 'contract-core', element: <Navigate to="/dashboard" replace /> },
+      { path: 'contract-core', element: <ContractCorePage /> },
       { path: 'referral', element: <ReferralPage /> },
       { path: 'withdraw', element: <WithdrawPage /> },
       { path: 'nft', element: <NftPage /> },

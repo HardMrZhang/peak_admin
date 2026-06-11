@@ -61,6 +61,11 @@ const menuItems: MenuProps['items'] = [
     ],
   },
   {
+    key: '/contract-core',
+    icon: <BlockOutlined />,
+    label: '合约控制台',
+  },
+  {
     key: '/referral',
     icon: <ShareAltOutlined />,
     label: '推荐管理',
@@ -98,6 +103,7 @@ const breadcrumbMap: Record<string, string> = {
   orders: '订单管理',
   settlement: '结算管理',
   snapshots: '奖励快照',
+  'contract-core': '合约控制台',
   referral: '推荐管理',
   withdraw: '提现管理',
   'platform-wallet': '归集钱包',
