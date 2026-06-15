@@ -89,7 +89,7 @@ export default function AdminUsersPage() {
       render: (roles: any[]) =>
         roles?.map((r: any) => (
           <Tag color="blue" key={r.id || r.roleId}>
-            {r.role?.name || r.name}
+            {r.roleName || r.role?.roleName || r.name}
           </Tag>
         )) || '-',
     },
@@ -210,7 +210,7 @@ export default function AdminUsersPage() {
             <Select
               mode="multiple"
               placeholder="请选择角色"
-              options={roles.map((r: any) => ({ label: r.name, value: r.id }))}
+              options={roles.map((r: any) => ({ label: r.roleName || r.name, value: r.id }))}
             />
           </Form.Item>
         </Form>

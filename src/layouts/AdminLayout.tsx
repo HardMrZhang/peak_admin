@@ -28,6 +28,7 @@ import {
   MenuUnfoldOutlined,
   BellOutlined,
   BankOutlined,
+  TeamOutlined,
 } from '@ant-design/icons'
 import type { MenuProps } from 'antd'
 import { useAuthStore } from '@/store/auth'
@@ -43,14 +44,28 @@ const menuItems: MenuProps['items'] = [
     label: '控制台',
   },
   {
+    key: 'grp-accounts',
+    icon: <TeamOutlined />,
+    label: '账户管理',
+    children: [
+      { key: '/users', label: '用户账户' },
+      { key: '/rbac/users', label: '管理员账户' },
+    ],
+  },
+  {
     key: '/node-config',
     icon: <SettingOutlined />,
     label: '节点配置',
   },
   {
-    key: '/orders',
+    key: 'grp-orders',
     icon: <ShoppingCartOutlined />,
     label: '订单管理',
+    children: [
+      { key: '/orders', label: '影视节点订单' },
+      { key: '/airdrop-orders', label: '三倍空投订单' },
+      { key: '/stake-orders', label: '质押订单' },
+    ],
   },
   {
     key: 'settlement',
@@ -99,8 +114,12 @@ const menuItems: MenuProps['items'] = [
 
 const breadcrumbMap: Record<string, string> = {
   dashboard: '控制台',
+  users: '用户账户',
+  rbac: '账户管理',
   'node-config': '节点配置',
   orders: '订单管理',
+  'airdrop-orders': '三倍空投订单',
+  'stake-orders': '质押订单',
   settlement: '结算管理',
   snapshots: '奖励快照',
   'contract-core': '合约控制台',
@@ -113,6 +132,16 @@ const breadcrumbMap: Record<string, string> = {
   banners: 'Banner 管理',
 }
 
+// 子菜单项 → 所属父级分组 key，用于自动展开当前路由所在分组。
+const pathGroupMap: Record<string, string> = {
+  '/users': 'grp-accounts',
+  '/rbac/users': 'grp-accounts',
+  '/orders': 'grp-orders',
+  '/airdrop-orders': 'grp-orders',
+  '/stake-orders': 'grp-orders',
+  '/settlement/snapshots': 'settlement',
+}
+
 export default function AdminLayout() {
   const navigate = useNavigate()
   const location = useLocation()
@@ -120,6 +149,10 @@ export default function AdminLayout() {
   const [collapsed, setCollapsed] = useState(false)
   const [loading, setLoading] = useState(true)
   const [pwdVisible, setPwdVisible] = useState(false)
+  const [manualOpenKeys, setManualOpenKeys] = useState<string[]>(() => {
+    const g = pathGroupMap[location.pathname]
+    return g ? [g] : []
+  })
 
   useEffect(() => {
     if (!token) {
@@ -129,10 +162,15 @@ export default function AdminLayout() {
     fetchProfile().finally(() => setLoading(false))
   }, [token])
 
-  const selectedKeys = [location.pathname]
-  const openKeys = location.pathname.split('/').length > 2
-    ? [`/${location.pathname.split('/')[1]}`, location.pathname.split('/').slice(0, 2).join('/')]
-    : []
+  // 当前路由所在分组始终展开（程序化跳转也会自动展开），其余分组由用户手动控制。
+  const currentGroup = pathGroupMap[location.pathname]
+  const openKeys = currentGroup && !manualOpenKeys.includes(currentGroup)
+    ? [...manualOpenKeys, currentGroup]
+    : manualOpenKeys
+
+  // 订单详情等子路由高亮其所属列表项。
+  const selectedKey = /^\/orders\/.+/.test(location.pathname) ? '/orders' : location.pathname
+  const selectedKeys = [selectedKey]
 
   const pathParts = location.pathname.split('/').filter(Boolean)
   const breadcrumbItems = [
@@ -213,9 +251,12 @@ export default function AdminLayout() {
           theme="dark"
           mode="inline"
           selectedKeys={selectedKeys}
-          defaultOpenKeys={openKeys}
+          openKeys={openKeys}
+          onOpenChange={(keys) => setManualOpenKeys(keys as string[])}
           items={menuItems}
-          onClick={({ key }) => navigate(key)}
+          onClick={({ key }) => {
+            if (key.startsWith('/')) navigate(key)
+          }}
           style={{ borderRight: 0, marginTop: 8 }}
         />
       </Sider>

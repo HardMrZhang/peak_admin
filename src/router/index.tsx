@@ -5,6 +5,10 @@ import Dashboard from '@/pages/dashboard'
 import NodeConfigPage from '@/pages/nodeConfig'
 import OrdersPage from '@/pages/orders'
 import OrderDetailPage from '@/pages/orders/detail'
+import AirdropOrdersPage from '@/pages/orders/airdrop'
+import StakeOrdersPage from '@/pages/orders/stake'
+import UsersPage from '@/pages/users'
+import AdminUsersPage from '@/pages/rbac/users'
 import SnapshotsPage from '@/pages/settlement/snapshots'
 import ReferralPage from '@/pages/referral'
 import WithdrawPage from '@/pages/withdraw'
@@ -25,9 +29,13 @@ const router = createBrowserRouter([
     children: [
       { index: true, element: <Navigate to="/dashboard" replace /> },
       { path: 'dashboard', element: <Dashboard /> },
+      { path: 'users', element: <UsersPage /> },
+      { path: 'rbac/users', element: <AdminUsersPage /> },
       { path: 'rbac/*', element: <Navigate to="/dashboard" replace /> },
       { path: 'node-config', element: <NodeConfigPage /> },
       { path: 'orders', element: <OrdersPage /> },
+      { path: 'airdrop-orders', element: <AirdropOrdersPage /> },
+      { path: 'stake-orders', element: <StakeOrdersPage /> },
       { path: 'orders/:id', element: <OrderDetailPage /> },
       { path: 'settlement/snapshots', element: <SnapshotsPage /> },
       { path: 'contract-core', element: <ContractCorePage /> },

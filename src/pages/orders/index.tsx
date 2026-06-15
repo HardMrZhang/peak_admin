@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, useSearchParams } from 'react-router-dom'
 import {
   Card, Table, Button, Form, Input, Select, Tag, Space, Typography, DatePicker, Tooltip,
 } from 'antd'
@@ -21,10 +21,12 @@ const statusOptions = Object.entries(statusMap).map(([k, v]) => ({ label: v.text
 
 export default function OrdersPage() {
   const navigate = useNavigate()
+  const [searchParams] = useSearchParams()
+  const initialWallet = searchParams.get('wallet') || ''
   const [loading, setLoading] = useState(false)
   const [data, setData] = useState<any[]>([])
   const [pagination, setPagination] = useState({ current: 1, pageSize: 10, total: 0 })
-  const [filters, setFilters] = useState<Record<string, any>>({})
+  const [filters, setFilters] = useState<Record<string, any>>(initialWallet ? { walletAddress: initialWallet } : {})
   const [form] = Form.useForm()
 
   const loadData = async (page = 1, pageSize = 10, extra?: Record<string, any>) => {
@@ -39,7 +41,11 @@ export default function OrdersPage() {
     }
   }
 
-  useEffect(() => { loadData() }, [])
+  useEffect(() => {
+    if (initialWallet) form.setFieldsValue({ walletAddress: initialWallet })
+    loadData()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
 
   const shortText = (value?: string | null, head = 8, tail = 6) => {
     if (!value) return '-'
