@@ -354,7 +354,7 @@ export default function UsersPage() {
 
             <div style={{ margin: '20px 0 12px', fontWeight: 600 }}>查看订单</div>
             <Space wrap>
-              <Button onClick={() => goOrders('/orders', detail.walletAddress)}>
+              <Button onClick={() => goOrders('/genesis', detail.walletAddress)}>
                 影视节点（{detail.stats?.nodeOrderCount ?? 0}）
               </Button>
               <Button onClick={() => goOrders('/airdrop-orders', detail.walletAddress)}>

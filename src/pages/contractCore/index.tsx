@@ -1,9 +1,11 @@
 import { useEffect, useState } from 'react'
 import {
   App, Button, Card, Col, Descriptions, Divider, Form, Input, InputNumber, Row,
-  Select, Space, Table, Tabs, Tag, Typography,
+  Select, Space, Statistic, Table, Tabs, Tag, Typography,
 } from 'antd'
 import { ReloadOutlined } from '@ant-design/icons'
+import { useNavigate } from 'react-router-dom'
+import { getGenesisStats } from '@/api/genesis'
 import {
   adminTransferNode,
   claimReferral,
@@ -65,6 +67,13 @@ const coverageStatusColor: Record<string, string> = {
   partial: 'warning',
   queued_worker: 'processing',
   h5_user_signed: 'default',
+}
+
+const genesisStatusMap: Record<string, { color: string; text: string }> = {
+  NOT_STARTED: { color: 'default', text: '未开始' },
+  ON_SALE: { color: 'success', text: '销售中' },
+  PAUSED: { color: 'warning', text: '已暂停' },
+  ENDED: { color: 'error', text: '已结束' },
 }
 
 type Unit = 'bps' | 'usdt6' | 'peak9' | 'int' | null
@@ -171,8 +180,10 @@ function ActionCard({
 
 export default function ContractCorePage() {
   const { message, modal } = App.useApp()
+  const navigate = useNavigate()
   const [coverage, setCoverage] = useState<any[]>([])
   const [inventory, setInventory] = useState<any>(null)
+  const [genesis, setGenesis] = useState<any>(null)
   const [dappConfig, setDappConfig] = useState<any>(null)
   const [loading, setLoading] = useState(false)
   const [dappCfgLoading, setDappCfgLoading] = useState(false)
@@ -220,12 +231,14 @@ export default function ContractCorePage() {
   const loadData = async () => {
     setLoading(true)
     try {
-      const [coverageRes, inventoryRes]: any = await Promise.allSettled([
+      const [coverageRes, inventoryRes, genesisRes]: any = await Promise.allSettled([
         getContractCoverage(),
         getContractInventory(),
+        getGenesisStats(),
       ])
       setCoverage(coverageRes.status === 'fulfilled' ? (coverageRes.value.data || []) : [])
       setInventory(inventoryRes.status === 'fulfilled' ? (inventoryRes.value.data || null) : null)
+      setGenesis(genesisRes.status === 'fulfilled' ? (genesisRes.value.data || null) : null)
     } finally {
       setLoading(false)
     }
@@ -281,10 +294,36 @@ export default function ContractCorePage() {
   })
 
   // ────────────────────────── 概览 Tab ──────────────────────────
+  const genesisStatus = genesisStatusMap[genesis?.status] || { color: 'default', text: genesis?.status || '-' }
   const overviewTab = (
+    <>
+    <Card
+      title="影视节点"
+      loading={loading}
+      style={{ borderRadius: 12, marginBottom: 16 }}
+      extra={(
+        <Space>
+          <Tag color={genesisStatus.color}>{genesisStatus.text}</Tag>
+          <Button size="small" onClick={() => navigate('/genesis')}>查看订单</Button>
+          <Button size="small" onClick={() => navigate('/genesis?tab=nfts')}>查看 NFT</Button>
+        </Space>
+      )}
+    >
+      <Row gutter={[16, 16]}>
+        <Col xs={12} sm={8} md={6} lg={4}><Statistic title="发行总量" value={genesis?.totalSupply ?? '-'} /></Col>
+        <Col xs={12} sm={8} md={6} lg={4}><Statistic title="已售" value={genesis?.soldTotal ?? '-'} /></Col>
+        <Col xs={12} sm={8} md={6} lg={4}><Statistic title="剩余" value={genesis?.remaining ?? '-'} /></Col>
+        <Col xs={12} sm={8} md={6} lg={4}><Statistic title="单价" value={genesis?.nftPriceUsdt ?? '-'} suffix="USDT" /></Col>
+        <Col xs={12} sm={8} md={6} lg={4}><Statistic title="已完成订单" value={genesis?.completedOrders ?? '-'} /></Col>
+        <Col xs={12} sm={8} md={6} lg={4}><Statistic title="累计销量" value={genesis?.totalQtySold ?? '-'} /></Col>
+        <Col xs={12} sm={8} md={6} lg={4}><Statistic title="累计营收" value={genesis?.totalRevenueUsdt ?? '-'} suffix="USDT" /></Col>
+        <Col xs={12} sm={8} md={6} lg={4}><Statistic title="已发放空投" value={genesis?.totalPeakAirdropped ?? '-'} suffix="PEAK" /></Col>
+        <Col xs={12} sm={8} md={6} lg={4}><Statistic title="已铸造 NFT" value={genesis?.nftMintedCount ?? '-'} /></Col>
+      </Row>
+    </Card>
     <Row gutter={16}>
       <Col xs={24} lg={9}>
-        <Card title="节点销售库存" loading={loading} style={{ borderRadius: 12, height: '100%' }}>
+        <Card title="节点合约链上库存" loading={loading} style={{ borderRadius: 12, height: '100%' }}>
           <Descriptions column={1} size="small" labelStyle={{ width: 110 }}>
             <Descriptions.Item label="Program">
               <Text copyable={!!inventory?.programId} style={{ fontFamily: 'Consolas, monospace', fontSize: 12 }}>
@@ -327,6 +366,7 @@ export default function ContractCorePage() {
         </Card>
       </Col>
     </Row>
+    </>
   )
 
   // ────────────────────────── 节点合约 Tab ──────────────────────────
