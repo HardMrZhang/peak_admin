@@ -67,6 +67,39 @@ const coverageStatusColor: Record<string, string> = {
   h5_user_signed: 'default',
 }
 
+type Unit = 'bps' | 'usdt6' | 'peak9' | 'int' | null
+
+// raw 整数按精度还原为可读字符串（去尾零）
+function fmtUnits(raw: string | number, decimals: number): string {
+  const s = String(raw)
+  if (!/^\d+$/.test(s)) return ''
+  const base = 10n ** BigInt(decimals)
+  const v = BigInt(s)
+  const int = v / base
+  const frac = (v % base).toString().padStart(decimals, '0').replace(/0+$/, '')
+  return frac ? `${int}.${frac}` : int.toString()
+}
+
+// 由配置字段 key 推断单位（bps / USDT-6位 / PEAK-9位 / 纯整数）
+function unitOf(f?: { key: string; kind: string }): Unit {
+  if (!f || f.kind === 'pubkey') return null
+  if (/Bps$/.test(f.key)) return 'bps'
+  if (/Usdt/i.test(f.key)) return 'usdt6'
+  if (f.key === 'minStakeAmount') return 'peak9'
+  return 'int'
+}
+
+// raw 值 → 可读换算提示文案；无法换算时返回空串
+function conversionHint(unit: Unit, raw: any): string {
+  if (!unit || unit === 'int') return ''
+  const s = String(raw ?? '')
+  if (!/^\d+$/.test(s)) return ''
+  if (unit === 'bps') return `≈ ${Number(s) / 100}%`
+  if (unit === 'usdt6') return `≈ ${fmtUnits(s, 6)} USDT`
+  if (unit === 'peak9') return `≈ ${fmtUnits(s, 9)} PEAK`
+  return ''
+}
+
 // 单个操作的卡片：独立 Form 实例 + 校验 + 提交按钮，避免多表单共用一个实例。
 function ActionCard({
   title, desc, form, onSubmit, okText = '执行', danger, children,
@@ -96,7 +129,7 @@ function ActionCard({
 }
 
 export default function ContractCorePage() {
-  const { message } = App.useApp()
+  const { message, modal } = App.useApp()
   const [coverage, setCoverage] = useState<any[]>([])
   const [inventory, setInventory] = useState<any>(null)
   const [dappConfig, setDappConfig] = useState<any>(null)
@@ -116,6 +149,15 @@ export default function ContractCorePage() {
   const [csrF] = Form.useForm()
   const [cfgChangeF] = Form.useForm()
   const [transferDappF] = Form.useForm()
+
+  // 实时换算提示：监听各 raw 输入，按单位换算为可读值
+  const cfgFieldKey = Form.useWatch('dappCfgField', cfgChangeF)
+  const cfgValue = Form.useWatch('dappCfgValue', cfgChangeF)
+  const cfgMeta = DAPP_CONFIG_FIELDS.find((f) => f.key === cfgFieldKey)
+  const cfgHint = conversionHint(unitOf(cfgMeta), cfgValue)
+  const creditAmt = Form.useWatch('amount', creditUserF)
+  const priceAmt = Form.useWatch('peakPriceUsdt', priceF)
+  const csrAmt = Form.useWatch('amount', csrF)
 
   const loadDappConfig = async () => {
     setDappCfgLoading(true)
@@ -152,20 +194,45 @@ export default function ContractCorePage() {
     if (reload) reload()
   }
 
-  const submitDappConfigChange = async (values: any) => {
+  const submitDappConfigChange = (values: any) => new Promise<void>((resolve, reject) => {
     const meta = DAPP_CONFIG_FIELDS.find((f) => f.key === values.dappCfgField)
-    if (!meta) { message.warning('请先选择要修改的参数'); return }
+    if (!meta) { message.warning('请先选择要修改的参数'); resolve(); return }
     const value = String(values.dappCfgValue ?? '').trim()
     if (meta.kind === 'u64' && !/^\d+$/.test(value)) {
-      message.warning(`${meta.label} 需要非负整数（raw 值）`); return
+      message.warning(`${meta.label} 需要非负整数（raw 值）`); resolve(); return
     }
     if (meta.kind === 'pubkey' && !BASE58_RE.test(value)) {
-      message.warning(`${meta.label} 需要合法的 Solana 地址`); return
+      message.warning(`${meta.label} 需要合法的 Solana 地址`); resolve(); return
     }
-    await updateDappConfig({ [meta.key]: value })
-    after(`已修改：${meta.label}`, loadDappConfig)
-    cfgChangeF.resetFields()
-  }
+    const human = conversionHint(unitOf(meta), value)
+    modal.confirm({
+      title: '确认修改链上配置？',
+      content: (
+        <div>
+          将把 <b>{meta.label}</b> 修改为：
+          <div style={{ margin: '8px 0' }}>
+            <Text code copyable={meta.kind === 'pubkey'}>{value}</Text>
+            {human ? <Text type="secondary" style={{ marginLeft: 8 }}>{human}</Text> : null}
+          </div>
+          <Text type="warning">admin 将签名直接上链，链上 validate_all 会复核不变量，非法组合会被拒绝。</Text>
+        </div>
+      ),
+      okText: '确认上链',
+      cancelText: '取消',
+      onOk: async () => {
+        try {
+          await updateDappConfig({ [meta.key]: value })
+          after(`已修改：${meta.label}`, loadDappConfig)
+          cfgChangeF.resetFields()
+          resolve()
+        } catch (e) {
+          reject(e)
+          throw e
+        }
+      },
+      onCancel: () => resolve(),
+    })
+  })
 
   // ────────────────────────── 概览 Tab ──────────────────────────
   const overviewTab = (
@@ -370,7 +437,7 @@ export default function ContractCorePage() {
               ]}
             />
           </Form.Item>
-          <Form.Item name="amount" label="数量（raw，9 位精度）" rules={[{ required: true, message: '请输入数量' }]}>
+          <Form.Item name="amount" label="数量（raw，9 位精度）" extra={conversionHint('peak9', creditAmt)} rules={[{ required: true, message: '请输入数量' }]}>
             <Input placeholder="如 1000000000000" />
           </Form.Item>
         </ActionCard>
@@ -386,7 +453,7 @@ export default function ContractCorePage() {
             after('update_price 已入队')
           }}
         >
-          <Form.Item name="peakPriceUsdt" label="PEAK 价格 USDT（6位精度 raw）" rules={[{ required: true, message: '请输入价格' }]}>
+          <Form.Item name="peakPriceUsdt" label="PEAK 价格 USDT（6位精度 raw）" extra={conversionHint('usdt6', priceAmt)} rules={[{ required: true, message: '请输入价格' }]}>
             <Input placeholder="1 PEAK 的 USDT 价 raw" />
           </Form.Item>
           <Form.Item name="maxStaleSecs" label="maxStaleSecs（可选，0 沿用现值）">
@@ -416,7 +483,7 @@ export default function ContractCorePage() {
           <Form.Item name="positionId" label="positionId" rules={[{ required: true, message: '请输入 positionId' }]}>
             <Input placeholder="positionId" />
           </Form.Item>
-          <Form.Item name="amount" label="收益数量（raw，9 位精度）" rules={[{ required: true, message: '请输入数量' }]}>
+          <Form.Item name="amount" label="收益数量（raw，9 位精度）" extra={conversionHint('peak9', csrAmt)} rules={[{ required: true, message: '请输入数量' }]}>
             <Input placeholder="如 1000000000" />
           </Form.Item>
         </ActionCard>
@@ -472,7 +539,7 @@ export default function ContractCorePage() {
                 options={DAPP_CONFIG_FIELDS.map((f) => ({ value: f.key, label: `${f.label}（${f.key}）` }))}
               />
             </Form.Item>
-            <Form.Item name="dappCfgValue" label="新值" rules={[{ required: true, message: '请输入新值' }]}>
+            <Form.Item name="dappCfgValue" label="新值" extra={cfgHint} rules={[{ required: true, message: '请输入新值' }]}>
               <Input placeholder="地址 或 整数 raw 值（单位见参数说明）" />
             </Form.Item>
           </ActionCard>
@@ -483,7 +550,29 @@ export default function ContractCorePage() {
             form={transferDappF}
             okText="执行 transfer_dapp_admin"
             danger
-            onSubmit={async (v: any) => { await transferDappAdmin(v.dappNewAdmin); after('transfer_dapp_admin 成功', loadDappConfig) }}
+            onSubmit={(v: any) => new Promise<void>((resolve, reject) => {
+              modal.confirm({
+                title: '确认移交治理 admin？',
+                content: (
+                  <div>
+                    移交后<b>当前 admin 将失去全部治理权限</b>，此操作不可逆。新 admin：
+                    <div style={{ marginTop: 8 }}><Text code copyable>{v.dappNewAdmin}</Text></div>
+                  </div>
+                ),
+                okText: '确认移交',
+                okButtonProps: { danger: true },
+                cancelText: '取消',
+                onOk: async () => {
+                  try {
+                    await transferDappAdmin(v.dappNewAdmin)
+                    after('transfer_dapp_admin 成功', loadDappConfig)
+                    transferDappF.resetFields()
+                    resolve()
+                  } catch (e) { reject(e); throw e }
+                },
+                onCancel: () => resolve(),
+              })
+            })}
           >
             <Form.Item name="dappNewAdmin" label="新 admin 地址" rules={[{ required: true, message: '请输入地址' }, base58Rule]}>
               <Input placeholder="Solana 地址" />
