@@ -2,10 +2,13 @@ import { useEffect, useState } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import {
   Card, Table, Button, Form, Input, Select, Tag, Typography, DatePicker, Tooltip,
-  Modal, Descriptions, Spin,
+  Modal, Descriptions, Spin, App, InputNumber, Space, Alert, Divider,
 } from 'antd'
-import { EyeOutlined, SearchOutlined } from '@ant-design/icons'
-import { getAirdropOrders, getAirdropOrderDetail } from '@/api/airdrop'
+import { EyeOutlined, SearchOutlined, CloudSyncOutlined, ThunderboltOutlined } from '@ant-design/icons'
+import {
+  getAirdropOrders, getAirdropOrderDetail, getAirdropOnchain, recordAirdropRelease,
+} from '@/api/airdrop'
+import { triggerChainSync } from '@/api/dapp'
 
 const { Title, Text } = Typography
 const { RangePicker } = DatePicker
@@ -22,9 +25,11 @@ const shortText = (value?: string | null, head = 8, tail = 6) => {
 }
 
 export default function AirdropOrdersPage() {
+  const { message, modal } = App.useApp()
   const [searchParams] = useSearchParams()
   const initialWallet = searchParams.get('wallet') || ''
   const [loading, setLoading] = useState(false)
+  const [syncing, setSyncing] = useState(false)
   const [data, setData] = useState<any[]>([])
   const [pagination, setPagination] = useState({ current: 1, pageSize: 10, total: 0 })
   const [filters, setFilters] = useState<Record<string, any>>(initialWallet ? { walletAddress: initialWallet } : {})
@@ -33,6 +38,16 @@ export default function AirdropOrdersPage() {
   const [detailVisible, setDetailVisible] = useState(false)
   const [detailLoading, setDetailLoading] = useState(false)
   const [detail, setDetail] = useState<any>(null)
+
+  // 链上实时状态（详情弹窗内按需加载）
+  const [onchainLoading, setOnchainLoading] = useState(false)
+  const [onchain, setOnchain] = useState<any>(null)
+  const [onchainErr, setOnchainErr] = useState<string>('')
+
+  // 链上补发记账
+  const [releaseForm] = Form.useForm()
+  const [releaseOpen, setReleaseOpen] = useState(false)
+  const [releaseSubmitting, setReleaseSubmitting] = useState(false)
 
   const loadData = async (page = 1, pageSize = 10, extra?: Record<string, any>) => {
     setLoading(true)
@@ -65,16 +80,77 @@ export default function AirdropOrdersPage() {
     loadData(1, pagination.pageSize, f)
   }
 
+  const loadOnchain = async (id: string) => {
+    setOnchainLoading(true)
+    setOnchain(null)
+    setOnchainErr('')
+    try {
+      const res: any = await getAirdropOnchain(id)
+      setOnchain(res.data)
+    } catch (e: any) {
+      setOnchainErr(e?.response?.data?.message || e?.message || '读取链上数据失败')
+    } finally {
+      setOnchainLoading(false)
+    }
+  }
+
   const openDetail = async (record: any) => {
     setDetailVisible(true)
     setDetailLoading(true)
     setDetail(null)
+    setOnchain(null)
+    setOnchainErr('')
     try {
       const res: any = await getAirdropOrderDetail(record.id)
       setDetail(res.data)
+      loadOnchain(record.id)
     } finally {
       setDetailLoading(false)
     }
+  }
+
+  const handleChainSync = async () => {
+    setSyncing(true)
+    try {
+      await triggerChainSync()
+      message.success('链上对账任务已入队，稍后列表数据将与链上同步')
+    } catch (e: any) {
+      message.error(e?.response?.data?.message || '链上对账触发失败')
+    } finally {
+      setSyncing(false)
+    }
+  }
+
+  const openRelease = () => {
+    releaseForm.resetFields()
+    if (onchain?.exists) {
+      releaseForm.setFieldsValue({ day: (onchain.lastReleasedDay || 0) + 1 })
+    }
+    setReleaseOpen(true)
+  }
+
+  const submitRelease = async () => {
+    const values = await releaseForm.validateFields()
+    modal.confirm({
+      title: '确认链上记账发放？',
+      content: `将向链上记账第 ${values.day} 天发放 ${values.amount} PEAK，operator 钱包将签名上链并消耗 GAS。`,
+      okText: '确认上链',
+      cancelText: '取消',
+      onOk: async () => {
+        setReleaseSubmitting(true)
+        try {
+          await recordAirdropRelease(detail.id, { day: values.day, amount: values.amount })
+          message.success('链上发放记账已提交')
+          setReleaseOpen(false)
+          loadOnchain(detail.id)
+        } catch (e: any) {
+          message.error(e?.response?.data?.message || '链上记账失败')
+          throw e
+        } finally {
+          setReleaseSubmitting(false)
+        }
+      },
+    })
   }
 
   const columns = [
@@ -165,6 +241,9 @@ export default function AirdropOrdersPage() {
           <Form.Item>
             <Button onClick={() => { form.resetFields(); setFilters({}); loadData(1, pagination.pageSize, {}) }}>重置</Button>
           </Form.Item>
+          <Form.Item>
+            <Button icon={<CloudSyncOutlined />} loading={syncing} onClick={handleChainSync}>链上对账</Button>
+          </Form.Item>
         </Form>
       </Card>
 
@@ -190,7 +269,18 @@ export default function AirdropOrdersPage() {
         title="三倍空投订单详情"
         open={detailVisible}
         onCancel={() => setDetailVisible(false)}
-        footer={<Button onClick={() => setDetailVisible(false)}>关闭</Button>}
+        footer={[
+          <Button
+            key="release"
+            type="primary"
+            icon={<ThunderboltOutlined />}
+            disabled={!detail}
+            onClick={openRelease}
+          >
+            链上补发记账
+          </Button>,
+          <Button key="close" onClick={() => setDetailVisible(false)}>关闭</Button>,
+        ]}
         width={820}
         destroyOnClose
       >
@@ -219,6 +309,41 @@ export default function AirdropOrdersPage() {
               </Descriptions.Item>
             </Descriptions>
 
+            <Divider style={{ margin: '20px 0 12px' }} />
+            <Space style={{ marginBottom: 12 }}>
+              <span style={{ fontWeight: 600 }}>链上实时状态</span>
+              <Button size="small" icon={<CloudSyncOutlined />} loading={onchainLoading} onClick={() => loadOnchain(detail.id)}>刷新</Button>
+            </Space>
+            {onchainLoading ? (
+              <div style={{ textAlign: 'center', padding: 20 }}><Spin /></div>
+            ) : onchainErr ? (
+              <Alert type="error" showIcon message={onchainErr} />
+            ) : onchain && !onchain.exists ? (
+              <Alert type="warning" showIcon message={onchain.message || '链上未找到该空投账户'} />
+            ) : onchain ? (
+              <>
+                {onchain.mirror && !onchain.mirror.releasedConsistent && (
+                  <Alert
+                    type="warning"
+                    showIcon
+                    style={{ marginBottom: 12 }}
+                    message="链上已发放数量与数据库镜像不一致，建议执行链上对账"
+                  />
+                )}
+                <Descriptions column={2} bordered size="small">
+                  <Descriptions.Item label="链上账户(PDA)" span={2}>
+                    <Text copyable style={{ fontFamily: 'Consolas, monospace', wordBreak: 'break-all' }}>{onchain.pda}</Text>
+                  </Descriptions.Item>
+                  <Descriptions.Item label="链上已发放">{onchain.released} PEAK</Descriptions.Item>
+                  <Descriptions.Item label="链上剩余">{onchain.remain} PEAK</Descriptions.Item>
+                  <Descriptions.Item label="封顶总量">{onchain.totalCap} PEAK</Descriptions.Item>
+                  <Descriptions.Item label="每日发放">{onchain.dailyAmount} PEAK</Descriptions.Item>
+                  <Descriptions.Item label="最近记账天序号">{onchain.lastReleasedDay}</Descriptions.Item>
+                  <Descriptions.Item label="是否出局">{onchain.isOut ? '已出局' : '进行中'}</Descriptions.Item>
+                </Descriptions>
+              </>
+            ) : null}
+
             <div style={{ margin: '20px 0 12px', fontWeight: 600 }}>空投记录</div>
             <Table
               columns={recordColumns}
@@ -231,6 +356,33 @@ export default function AirdropOrdersPage() {
             />
           </>
         )}
+      </Modal>
+
+      <Modal
+        title="链上补发空投记账"
+        open={releaseOpen}
+        onCancel={() => setReleaseOpen(false)}
+        onOk={submitRelease}
+        confirmLoading={releaseSubmitting}
+        okText="提交上链"
+        cancelText="取消"
+        destroyOnClose
+        width={460}
+      >
+        <Alert
+          type="info"
+          showIcon
+          style={{ marginBottom: 16 }}
+          message="将由 operator 钱包对入金合约记账一笔每日发放。天序号须严格大于链上最近记账天序号，链上强制 3 倍封顶。"
+        />
+        <Form form={releaseForm} layout="vertical">
+          <Form.Item name="day" label="天序号(day)" rules={[{ required: true, message: '请输入天序号' }]}>
+            <InputNumber min={1} style={{ width: '100%' }} placeholder="链下天序号，须严格递增" />
+          </Form.Item>
+          <Form.Item name="amount" label="发放数量(PEAK)" rules={[{ required: true, message: '请输入发放数量' }]}>
+            <InputNumber min={0} step={1} style={{ width: '100%' }} placeholder="本次发放的 PEAK 数量" />
+          </Form.Item>
+        </Form>
       </Modal>
     </div>
   )

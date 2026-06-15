@@ -9,3 +9,8 @@ export function getStakeOrders(params?: Record<string, unknown>) {
 export function getStakeOrderDetail(id: string) {
   return request.get(`/stake/${id}`)
 }
+
+// 实时读取该质押订单的链上 StakePosition 状态
+export function getStakeOnchain(id: string) {
+  return request.get(`/stake/${id}/onchain`)
+}

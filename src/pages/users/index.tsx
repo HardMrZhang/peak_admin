@@ -3,14 +3,26 @@ import { useNavigate } from 'react-router-dom'
 import {
   Card, Table, Button, Form, Input, Select, Tag, Space, Typography, DatePicker, Tooltip,
   Modal, Descriptions, Popconfirm, App, Spin, Tree, Statistic, Row, Col,
+  Divider, Alert, InputNumber,
 } from 'antd'
 import {
-  EyeOutlined, SearchOutlined, StopOutlined, CheckCircleOutlined,
+  EyeOutlined, SearchOutlined, StopOutlined, CheckCircleOutlined, CloudSyncOutlined, WalletOutlined,
 } from '@ant-design/icons'
 import type { DataNode } from 'antd/es/tree'
 import {
-  getUsers, getUserDetail, getUserReferrals, updateUserStatus,
+  getUsers, getUserDetail, getUserReferrals, updateUserStatus, getUserOnchain,
 } from '@/api/users'
+import { creditWithdraw, creditDividend, type DividendKey } from '@/api/dapp'
+
+const creditTargets: { value: string; label: string }[] = [
+  { value: 'withdraw', label: '提币可提额度' },
+  { value: 'promo', label: '一推五推广分红' },
+  { value: 't7', label: 'T7 加权分红' },
+  { value: '15', label: '15天质押分红' },
+  { value: '30', label: '30天质押分红' },
+  { value: '90', label: '90天质押分红' },
+  { value: '150', label: '150天质押分红' },
+]
 
 const { Title, Text } = Typography
 const { RangePicker } = DatePicker
@@ -47,7 +59,7 @@ function updateTreeData(list: DataNode[], key: React.Key, children: DataNode[]):
 
 export default function UsersPage() {
   const navigate = useNavigate()
-  const { message } = App.useApp()
+  const { message, modal } = App.useApp()
   const [loading, setLoading] = useState(false)
   const [data, setData] = useState<any[]>([])
   const [pagination, setPagination] = useState({ current: 1, pageSize: 10, total: 0 })
@@ -58,6 +70,14 @@ export default function UsersPage() {
   const [detailLoading, setDetailLoading] = useState(false)
   const [detail, setDetail] = useState<any>(null)
   const [treeData, setTreeData] = useState<DataNode[]>([])
+
+  const [onchainLoading, setOnchainLoading] = useState(false)
+  const [onchain, setOnchain] = useState<any>(null)
+  const [onchainErr, setOnchainErr] = useState<string>('')
+
+  const [creditForm] = Form.useForm()
+  const [creditOpen, setCreditOpen] = useState(false)
+  const [creditSubmitting, setCreditSubmitting] = useState(false)
 
   const loadData = async (page = 1, pageSize = 10, extra?: Record<string, any>) => {
     setLoading(true)
@@ -97,11 +117,27 @@ export default function UsersPage() {
     } catch { /* handled by interceptor */ }
   }
 
+  const loadOnchain = async (id: string) => {
+    setOnchainLoading(true)
+    setOnchain(null)
+    setOnchainErr('')
+    try {
+      const res: any = await getUserOnchain(id)
+      setOnchain(res.data)
+    } catch (e: any) {
+      setOnchainErr(e?.response?.data?.message || e?.message || '读取链上额度失败')
+    } finally {
+      setOnchainLoading(false)
+    }
+  }
+
   const openDetail = async (record: any) => {
     setDetailVisible(true)
     setDetailLoading(true)
     setDetail(null)
     setTreeData([])
+    setOnchain(null)
+    setOnchainErr('')
     try {
       const res: any = await getUserDetail(record.id)
       const d = res.data
@@ -113,9 +149,45 @@ export default function UsersPage() {
           isLeaf: (d.stats?.directReferralCount ?? 0) === 0,
         },
       ])
+      loadOnchain(record.id)
     } finally {
       setDetailLoading(false)
     }
+  }
+
+  const openCredit = () => {
+    creditForm.resetFields()
+    creditForm.setFieldsValue({ target: 'withdraw' })
+    setCreditOpen(true)
+  }
+
+  const submitCredit = async () => {
+    const values = await creditForm.validateFields()
+    const targetLabel = creditTargets.find((t) => t.value === values.target)?.label || values.target
+    modal.confirm({
+      title: '确认写入链上额度？',
+      content: `将给该用户写入「${targetLabel}」额度 ${values.amount} PEAK，operator 钱包将签名上链并消耗 GAS。`,
+      okText: '确认上链',
+      cancelText: '取消',
+      onOk: async () => {
+        setCreditSubmitting(true)
+        try {
+          if (values.target === 'withdraw') {
+            await creditWithdraw({ userId: detail.id, amount: values.amount })
+          } else {
+            await creditDividend({ userId: detail.id, key: values.target as DividendKey, amount: values.amount })
+          }
+          message.success('链上额度写入已提交')
+          setCreditOpen(false)
+          loadOnchain(detail.id)
+        } catch (e: any) {
+          message.error(e?.response?.data?.message || '链上额度写入失败')
+          throw e
+        } finally {
+          setCreditSubmitting(false)
+        }
+      },
+    })
   }
 
   const onLoadTreeData = async (node: any) => {
@@ -310,8 +382,72 @@ export default function UsersPage() {
                 blockNode
               />
             )}
+
+            <Divider style={{ margin: '20px 0 12px' }} />
+            <Space style={{ marginBottom: 12 }}>
+              <span style={{ fontWeight: 600 }}>链上额度账本</span>
+              <Button size="small" icon={<CloudSyncOutlined />} loading={onchainLoading} onClick={() => loadOnchain(detail.id)}>刷新</Button>
+              <Button size="small" type="primary" icon={<WalletOutlined />} onClick={openCredit}>写入额度</Button>
+            </Space>
+            {onchainLoading ? (
+              <div style={{ textAlign: 'center', padding: 20 }}><Spin /></div>
+            ) : onchainErr ? (
+              <Alert type="error" showIcon message={onchainErr} />
+            ) : onchain ? (
+              <Table
+                size="small"
+                pagination={false}
+                rowKey="key"
+                dataSource={[
+                  {
+                    key: 'withdraw',
+                    label: '提币可提额度',
+                    credit: onchain.withdrawLedger?.credit ?? '0',
+                    settled: onchain.withdrawLedger?.withdrawnTotal ?? '0',
+                  },
+                  ...(onchain.dividends || []).map((d: any) => ({
+                    key: d.key,
+                    label: d.label,
+                    credit: d.credit,
+                    settled: d.claimedTotal,
+                  })),
+                ]}
+                columns={[
+                  { title: '额度类型', dataIndex: 'label', key: 'label' },
+                  { title: '可提/可领额度', dataIndex: 'credit', key: 'credit', render: (v: string) => `${v} PEAK` },
+                  { title: '累计已提/已领', dataIndex: 'settled', key: 'settled', render: (v: string) => `${v} PEAK` },
+                ]}
+              />
+            ) : null}
           </>
         )}
+      </Modal>
+
+      <Modal
+        title="写入链上额度"
+        open={creditOpen}
+        onCancel={() => setCreditOpen(false)}
+        onOk={submitCredit}
+        confirmLoading={creditSubmitting}
+        okText="提交上链"
+        cancelText="取消"
+        destroyOnClose
+        width={460}
+      >
+        <Alert
+          type="info"
+          showIcon
+          style={{ marginBottom: 16 }}
+          message="将由 operator 钱包向对应合约写入用户可提/可领额度，用户随后在 H5 端单签领取。额度为累加写入。"
+        />
+        <Form form={creditForm} layout="vertical">
+          <Form.Item name="target" label="额度类型" rules={[{ required: true }]}>
+            <Select options={creditTargets} />
+          </Form.Item>
+          <Form.Item name="amount" label="额度数量(PEAK)" rules={[{ required: true, message: '请输入额度数量' }]}>
+            <InputNumber min={0} step={1} style={{ width: '100%' }} placeholder="写入的 PEAK 额度" />
+          </Form.Item>
+        </Form>
       </Modal>
     </div>
   )

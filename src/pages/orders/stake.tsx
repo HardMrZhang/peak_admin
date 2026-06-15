@@ -2,10 +2,11 @@ import { useEffect, useState } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import {
   Card, Table, Button, Form, Input, Select, Tag, Typography, DatePicker, Tooltip,
-  Modal, Descriptions, Spin,
+  Modal, Descriptions, Spin, App, Space, Alert, Divider,
 } from 'antd'
-import { EyeOutlined, SearchOutlined } from '@ant-design/icons'
-import { getStakeOrders, getStakeOrderDetail } from '@/api/stake'
+import { EyeOutlined, SearchOutlined, CloudSyncOutlined } from '@ant-design/icons'
+import { getStakeOrders, getStakeOrderDetail, getStakeOnchain } from '@/api/stake'
+import { triggerChainSync } from '@/api/dapp'
 
 const { Title, Text } = Typography
 const { RangePicker } = DatePicker
@@ -23,9 +24,11 @@ const shortText = (value?: string | null, head = 8, tail = 6) => {
 }
 
 export default function StakeOrdersPage() {
+  const { message } = App.useApp()
   const [searchParams] = useSearchParams()
   const initialWallet = searchParams.get('wallet') || ''
   const [loading, setLoading] = useState(false)
+  const [syncing, setSyncing] = useState(false)
   const [data, setData] = useState<any[]>([])
   const [pagination, setPagination] = useState({ current: 1, pageSize: 10, total: 0 })
   const [filters, setFilters] = useState<Record<string, any>>(initialWallet ? { walletAddress: initialWallet } : {})
@@ -34,6 +37,10 @@ export default function StakeOrdersPage() {
   const [detailVisible, setDetailVisible] = useState(false)
   const [detailLoading, setDetailLoading] = useState(false)
   const [detail, setDetail] = useState<any>(null)
+
+  const [onchainLoading, setOnchainLoading] = useState(false)
+  const [onchain, setOnchain] = useState<any>(null)
+  const [onchainErr, setOnchainErr] = useState<string>('')
 
   const loadData = async (page = 1, pageSize = 10, extra?: Record<string, any>) => {
     setLoading(true)
@@ -67,15 +74,44 @@ export default function StakeOrdersPage() {
     loadData(1, pagination.pageSize, f)
   }
 
+  const loadOnchain = async (id: string) => {
+    setOnchainLoading(true)
+    setOnchain(null)
+    setOnchainErr('')
+    try {
+      const res: any = await getStakeOnchain(id)
+      setOnchain(res.data)
+    } catch (e: any) {
+      setOnchainErr(e?.response?.data?.message || e?.message || '读取链上数据失败')
+    } finally {
+      setOnchainLoading(false)
+    }
+  }
+
   const openDetail = async (record: any) => {
     setDetailVisible(true)
     setDetailLoading(true)
     setDetail(null)
+    setOnchain(null)
+    setOnchainErr('')
     try {
       const res: any = await getStakeOrderDetail(record.id)
       setDetail(res.data)
+      loadOnchain(record.id)
     } finally {
       setDetailLoading(false)
+    }
+  }
+
+  const handleChainSync = async () => {
+    setSyncing(true)
+    try {
+      await triggerChainSync()
+      message.success('链上对账任务已入队，稍后列表数据将与链上同步')
+    } catch (e: any) {
+      message.error(e?.response?.data?.message || '链上对账触发失败')
+    } finally {
+      setSyncing(false)
     }
   }
 
@@ -172,6 +208,9 @@ export default function StakeOrdersPage() {
           <Form.Item>
             <Button onClick={() => { form.resetFields(); setFilters({}); loadData(1, pagination.pageSize, {}) }}>重置</Button>
           </Form.Item>
+          <Form.Item>
+            <Button icon={<CloudSyncOutlined />} loading={syncing} onClick={handleChainSync}>链上对账</Button>
+          </Form.Item>
         </Form>
       </Card>
 
@@ -204,6 +243,7 @@ export default function StakeOrdersPage() {
         {detailLoading || !detail ? (
           <div style={{ textAlign: 'center', padding: 40 }}><Spin /></div>
         ) : (
+          <>
           <Descriptions column={2} bordered size="small">
             <Descriptions.Item label="订单ID">{detail.id}</Descriptions.Item>
             <Descriptions.Item label="订单状态">
@@ -236,6 +276,30 @@ export default function StakeOrdersPage() {
               {detail.redeemTime ? new Date(detail.redeemTime).toLocaleString('zh-CN') : '-'}
             </Descriptions.Item>
           </Descriptions>
+
+          <Divider style={{ margin: '20px 0 12px' }} />
+          <Space style={{ marginBottom: 12 }}>
+            <span style={{ fontWeight: 600 }}>链上实时状态</span>
+            <Button size="small" icon={<CloudSyncOutlined />} loading={onchainLoading} onClick={() => loadOnchain(detail.id)}>刷新</Button>
+          </Space>
+          {onchainLoading ? (
+            <div style={{ textAlign: 'center', padding: 20 }}><Spin /></div>
+          ) : onchainErr ? (
+            <Alert type="error" showIcon message={onchainErr} />
+          ) : onchain && !onchain.exists ? (
+            <Alert type="warning" showIcon message={onchain.message || '链上仓位账户已关闭'} />
+          ) : onchain ? (
+            <Descriptions column={2} bordered size="small">
+              <Descriptions.Item label="链上账户(PDA)" span={2}>
+                <Text copyable style={{ fontFamily: 'Consolas, monospace', wordBreak: 'break-all' }}>{onchain.pda}</Text>
+              </Descriptions.Item>
+              <Descriptions.Item label="链上本金">{onchain.amount} PEAK</Descriptions.Item>
+              <Descriptions.Item label="是否可赎回">{onchain.redeemable ? '已到期可赎回' : '锁定中'}</Descriptions.Item>
+              <Descriptions.Item label="质押时间">{new Date(onchain.startTime).toLocaleString('zh-CN')}</Descriptions.Item>
+              <Descriptions.Item label="解锁时间">{new Date(onchain.unlockTime).toLocaleString('zh-CN')}</Descriptions.Item>
+            </Descriptions>
+          ) : null}
+          </>
         )}
       </Modal>
     </div>
