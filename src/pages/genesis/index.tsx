@@ -94,9 +94,9 @@ function GenesisOrdersTab() {
   }
 
   const columns = [
-    { title: '订单号', dataIndex: 'orderNo', key: 'orderNo', width: 170 },
-    { title: '钱包地址', dataIndex: 'walletAddress', key: 'walletAddress', width: 150, render: walletCell },
-    { title: '邀请码', dataIndex: 'inviteCode', key: 'inviteCode', width: 110, render: (v: string) => v || '-' },
+    { title: '订单号', dataIndex: 'orderNo', key: 'orderNo', width: 190, ellipsis: true },
+    { title: '钱包地址', dataIndex: 'walletAddress', key: 'walletAddress', width: 150, ellipsis: true, render: walletCell },
+    { title: '邀请码', dataIndex: 'inviteCode', key: 'inviteCode', width: 110, ellipsis: true, render: (v: string) => v || '-' },
     { title: '数量', dataIndex: 'qty', key: 'qty', width: 70 },
     { title: '单价(USDT)', dataIndex: 'unitPriceUsdt', key: 'unitPriceUsdt', width: 110 },
     { title: '总额(USDT)', dataIndex: 'totalAmountUsdt', key: 'totalAmountUsdt', width: 120 },
@@ -179,7 +179,7 @@ function GenesisOrdersTab() {
             showTotal: (total) => `共 ${total} 条`,
             onChange: (page, pageSize) => loadData(page, pageSize),
           }}
-          scroll={{ x: 1300 }}
+          scroll={{ x: 1320 }}
         />
       </Card>
 
@@ -265,9 +265,9 @@ function GenesisNftsTab() {
   }
 
   const columns = [
-    { title: '铸造编号', dataIndex: 'mintNo', key: 'mintNo', width: 110 },
-    { title: '订单号', dataIndex: 'orderNo', key: 'orderNo', width: 170, render: (v: string) => v || '-' },
-    { title: '钱包地址', dataIndex: 'walletAddress', key: 'walletAddress', width: 150, render: walletCell },
+    { title: '铸造编号', dataIndex: 'mintNo', key: 'mintNo', width: 110, ellipsis: true },
+    { title: '订单号', dataIndex: 'orderNo', key: 'orderNo', width: 190, ellipsis: true, render: (v: string) => v || '-' },
+    { title: '钱包地址', dataIndex: 'walletAddress', key: 'walletAddress', width: 150, ellipsis: true, render: walletCell },
     { title: 'TokenID', dataIndex: 'tokenId', key: 'tokenId', width: 120, render: (v: string) => v || '-' },
     { title: '节点序号', dataIndex: 'nodeIndex', key: 'nodeIndex', width: 90, render: (v: number) => v ?? '-' },
     {
@@ -329,7 +329,7 @@ function GenesisNftsTab() {
             showTotal: (total) => `共 ${total} 条`,
             onChange: (page, pageSize) => loadData(page, pageSize),
           }}
-          scroll={{ x: 1200 }}
+          scroll={{ x: 1240 }}
         />
       </Card>
     </>
