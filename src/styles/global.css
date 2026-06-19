@@ -54,6 +54,29 @@ html, body, #root {
   white-space: nowrap;
 }
 
+.rich-text-editor__area:empty::before {
+  content: attr(data-placeholder);
+  color: #bfbfbf;
+  pointer-events: none;
+}
+
+.rich-text-editor__area:focus {
+  outline: none;
+}
+
+.rich-text-editor__area img {
+  max-width: 100%;
+}
+
+.notice-html-preview {
+  font-size: 13px;
+  line-height: 1.6;
+}
+
+.notice-html-preview p {
+  margin: 0 0 4px;
+}
+
 @media (max-width: 992px) {
   .page-container {
     padding: 16px;

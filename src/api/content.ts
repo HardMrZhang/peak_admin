@@ -7,8 +7,9 @@ export function getBanners(params?: Record<string, unknown>) {
 export function createBanner(data: {
   langCode?: string
   title?: string
-  mediaType?: 'IMAGE' | 'VIDEO'
-  mediaUrl: string
+  mediaType?: 'IMAGE' | 'VIDEO' | 'RICH_TEXT'
+  mediaUrl?: string
+  contentHtml?: string
   targetUrl?: string
   sortOrder?: number
   isEnabled?: 0 | 1

@@ -108,7 +108,7 @@ const menuItems: MenuProps['items'] = [
   {
     key: '/content/banners',
     icon: <PictureOutlined />,
-    label: '内容管理',
+    label: '公告管理',
   },
 ]
 
@@ -130,7 +130,7 @@ const breadcrumbMap: Record<string, string> = {
   nft: 'NFT 管理',
   reports: '数据报表',
   content: '内容管理',
-  banners: 'Banner 管理',
+  banners: '公告管理',
 }
 
 // 子菜单项 → 所属父级分组 key，用于自动展开当前路由所在分组。

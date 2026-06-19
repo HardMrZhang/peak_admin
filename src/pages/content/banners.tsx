@@ -4,6 +4,7 @@ import {
 } from 'antd'
 import { PlusOutlined, EditOutlined, DeleteOutlined, SearchOutlined } from '@ant-design/icons'
 import { getBanners, createBanner, updateBanner, deleteBanner, toggleBanner } from '@/api/content'
+import RichTextEditor from '@/components/RichTextEditor'
 import dayjs from 'dayjs'
 
 const { Title, Text } = Typography
@@ -14,9 +15,23 @@ const langOptions = [
 ]
 
 const mediaTypeOptions = [
+  { label: '富文本公告', value: 'RICH_TEXT' },
   { label: '图片', value: 'IMAGE' },
   { label: '视频', value: 'VIDEO' },
 ]
+
+const mediaTypeMeta: Record<string, { label: string; color: string }> = {
+  RICH_TEXT: { label: '富文本公告', color: 'green' },
+  IMAGE: { label: '图片', color: 'blue' },
+  VIDEO: { label: '视频', color: 'purple' },
+}
+
+function stripHtml(html?: string) {
+  if (!html) return ''
+  const tmp = document.createElement('div')
+  tmp.innerHTML = html
+  return (tmp.textContent || tmp.innerText || '').trim()
+}
 
 export default function BannersPage() {
   const { message } = App.useApp()
@@ -28,6 +43,8 @@ export default function BannersPage() {
   const [current, setCurrent] = useState<any>(null)
   const [form] = Form.useForm()
   const [filterForm] = Form.useForm()
+  const mediaType = Form.useWatch('mediaType', form)
+  const isRichText = mediaType === 'RICH_TEXT'
 
   const loadData = async (page = 1, pageSize = 10) => {
     setLoading(true)
@@ -52,6 +69,13 @@ export default function BannersPage() {
     else payload.startAt = undefined
     if (values.endAt) payload.endAt = values.endAt.toISOString()
     else payload.endAt = undefined
+
+    if (values.mediaType === 'RICH_TEXT') {
+      payload.mediaUrl = ''
+    } else {
+      payload.contentHtml = ''
+    }
+    if (!payload.targetUrl) payload.targetUrl = undefined
 
     try {
       if (editMode && current) {
@@ -83,6 +107,13 @@ export default function BannersPage() {
     } catch { /* empty */ }
   }
 
+  const openCreate = () => {
+    setEditMode(false)
+    setCurrent(null)
+    form.resetFields()
+    setVisible(true)
+  }
+
   const openEdit = (record: any) => {
     setCurrent(record)
     setEditMode(true)
@@ -95,23 +126,31 @@ export default function BannersPage() {
   }
 
   const columns = [
-    { title: '标题', dataIndex: 'title', key: 'title', width: 140 },
+    { title: '标题', dataIndex: 'title', key: 'title', width: 150, ellipsis: true, render: (v: string) => v || '-' },
     {
-      title: '预览',
-      dataIndex: 'mediaUrl',
-      key: 'mediaUrl',
-      width: 100,
-      render: (v: string, record: any) =>
-        record.mediaType === 'VIDEO'
-          ? <Tag>视频</Tag>
-          : v ? <Image src={v} width={80} height={45} style={{ objectFit: 'cover', borderRadius: 4 }} /> : '-',
+      title: '内容预览',
+      key: 'preview',
+      width: 240,
+      render: (_: unknown, record: any) => {
+        if (record.mediaType === 'RICH_TEXT') {
+          const text = stripHtml(record.contentHtml)
+          return <Text type="secondary" style={{ fontSize: 12 }} ellipsis>{text || '-'}</Text>
+        }
+        if (record.mediaType === 'VIDEO') return <Tag color="purple">视频</Tag>
+        return record.mediaUrl
+          ? <Image src={record.mediaUrl} width={80} height={45} style={{ objectFit: 'cover', borderRadius: 4 }} />
+          : '-'
+      },
     },
     {
       title: '类型',
       dataIndex: 'mediaType',
       key: 'mediaType',
-      width: 70,
-      render: (v: string) => <Tag color={v === 'VIDEO' ? 'purple' : 'blue'}>{v === 'VIDEO' ? '视频' : '图片'}</Tag>,
+      width: 100,
+      render: (v: string) => {
+        const meta = mediaTypeMeta[v] || mediaTypeMeta.IMAGE
+        return <Tag color={meta.color}>{meta.label}</Tag>
+      },
     },
     {
       title: '语言',
@@ -120,7 +159,7 @@ export default function BannersPage() {
       width: 80,
       render: (v: string) => <Tag>{v}</Tag>,
     },
-    { title: '跳转链接', dataIndex: 'targetUrl', key: 'targetUrl', width: 180, ellipsis: true },
+    { title: '跳转链接', dataIndex: 'targetUrl', key: 'targetUrl', width: 160, ellipsis: true, render: (v: string) => v || '-' },
     { title: '排序', dataIndex: 'sortOrder', key: 'sortOrder', width: 70 },
     {
       title: '生效时间',
@@ -152,10 +191,11 @@ export default function BannersPage() {
       title: '操作',
       key: 'action',
       width: 140,
+      fixed: 'right' as const,
       render: (_: unknown, record: any) => (
         <Space>
           <Button type="link" size="small" icon={<EditOutlined />} onClick={() => openEdit(record)}>编辑</Button>
-          <Popconfirm title="确认删除此 Banner？" onConfirm={() => handleDelete(record.id)}>
+          <Popconfirm title="确认删除此内容？" onConfirm={() => handleDelete(record.id)}>
             <Button type="link" size="small" danger icon={<DeleteOutlined />}>删除</Button>
           </Popconfirm>
         </Space>
@@ -168,11 +208,11 @@ export default function BannersPage() {
       <div className="page-header">
         <Space style={{ width: '100%', justifyContent: 'space-between' }}>
           <div>
-            <Title level={4} style={{ margin: 0 }}>Banner 管理</Title>
-            <Text type="secondary">管理首页轮播图，支持多语言和定时上下架</Text>
+            <Title level={4} style={{ margin: 0 }}>公告管理</Title>
+            <Text type="secondary">管理首页公告栏（富文本），支持多语言和定时上下架</Text>
           </div>
-          <Button type="primary" icon={<PlusOutlined />} onClick={() => { setEditMode(false); setCurrent(null); form.resetFields(); setVisible(true) }}>
-            新增 Banner
+          <Button type="primary" icon={<PlusOutlined />} onClick={openCreate}>
+            新增公告
           </Button>
         </Space>
       </div>
@@ -199,38 +239,55 @@ export default function BannersPage() {
             showTotal: (total) => `共 ${total} 条`,
             onChange: (page, pageSize) => loadData(page, pageSize),
           }}
-          scroll={{ x: 1300 }}
+          scroll={{ x: 1400 }}
         />
       </Card>
 
       <Modal
-        title={editMode ? '编辑 Banner' : '新增 Banner'}
+        title={editMode ? '编辑公告' : '新增公告'}
         open={visible}
         onOk={handleSubmit}
         onCancel={() => { form.resetFields(); setVisible(false) }}
-        width={620}
+        width={720}
         destroyOnClose
       >
-        <Form form={form} layout="vertical" style={{ marginTop: 16 }} initialValues={{ langCode: 'zh-CN', mediaType: 'IMAGE', sortOrder: 0, isEnabled: 1 }}>
+        <Form form={form} layout="vertical" style={{ marginTop: 16 }} initialValues={{ langCode: 'zh-CN', mediaType: 'RICH_TEXT', sortOrder: 0, isEnabled: 1 }}>
           <Space style={{ width: '100%' }} size={16}>
             <Form.Item name="langCode" label="语言" style={{ flex: 1 }}>
               <Select options={langOptions} />
             </Form.Item>
-            <Form.Item name="mediaType" label="媒体类型" style={{ flex: 1 }}>
+            <Form.Item name="mediaType" label="类型" style={{ flex: 1 }}>
               <Select options={mediaTypeOptions} />
             </Form.Item>
           </Space>
-          <Form.Item name="title" label="标题">
-            <Input placeholder="Banner 标题" maxLength={100} />
+          <Form.Item name="title" label="标题" tooltip="公告栏滚动展示的文字，富文本公告也需填写标题">
+            <Input placeholder="公告标题" maxLength={100} />
           </Form.Item>
-          <Form.Item name="mediaUrl" label="媒体地址" rules={[{ required: true, message: '请输入媒体地址' }, { type: 'url', message: '请输入有效 URL' }]}>
-            <Input placeholder="请输入图片或视频 URL" />
-          </Form.Item>
-          <Form.Item name="targetUrl" label="跳转链接">
-            <Input placeholder="点击后跳转的链接" />
+
+          {isRichText ? (
+            <Form.Item
+              name="contentHtml"
+              label="公告内容（富文本）"
+              rules={[{
+                validator: (_, value) => {
+                  if (stripHtml(value)) return Promise.resolve()
+                  return Promise.reject(new Error('请输入公告内容'))
+                },
+              }]}
+            >
+              <RichTextEditor placeholder="请输入公告内容，可设置加粗、颜色、列表、链接等格式…" />
+            </Form.Item>
+          ) : (
+            <Form.Item name="mediaUrl" label="媒体地址" rules={[{ required: true, message: '请输入媒体地址' }, { type: 'url', message: '请输入有效 URL' }]}>
+              <Input placeholder="请输入图片或视频 URL" />
+            </Form.Item>
+          )}
+
+          <Form.Item name="targetUrl" label="跳转链接" rules={[{ type: 'url', message: '请输入有效 URL' }]}>
+            <Input placeholder="点击后跳转的链接（选填，需含 http(s)://）" />
           </Form.Item>
           <Space style={{ width: '100%' }} size={16}>
-            <Form.Item name="sortOrder" label="排序" style={{ flex: 1 }}>
+            <Form.Item name="sortOrder" label="排序" style={{ flex: 1 }} tooltip="数值越小越靠前">
               <InputNumber style={{ width: '100%' }} min={0} />
             </Form.Item>
             <Form.Item name="isEnabled" label="启用" style={{ flex: 1 }}>
