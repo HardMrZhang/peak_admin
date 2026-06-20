@@ -64,6 +64,61 @@ html, body, #root {
   outline: none;
 }
 
+/* === 富文本统一排版(需与前端 .sp-notice-body 保持一致) === */
+.rich-text-editor__area {
+  font-size: 14px;
+  line-height: 1.7;
+}
+
+.rich-text-editor__area div {
+  margin: 0;
+}
+
+.rich-text-editor__area p {
+  margin: 0 0 1em;
+}
+
+.rich-text-editor__area h1,
+.rich-text-editor__area h2,
+.rich-text-editor__area h3,
+.rich-text-editor__area h4 {
+  margin: 0 0 0.5em;
+  font-weight: 700;
+  line-height: 1.3;
+}
+
+.rich-text-editor__area h1 { font-size: 1.6em; }
+.rich-text-editor__area h2 { font-size: 1.3em; }
+.rich-text-editor__area h3 { font-size: 1.15em; }
+.rich-text-editor__area h4 { font-size: 1em; }
+
+.rich-text-editor__area ul,
+.rich-text-editor__area ol {
+  margin: 0 0 1em;
+  padding-left: 1.8em;
+}
+
+.rich-text-editor__area ul {
+  list-style: disc;
+}
+
+.rich-text-editor__area ol {
+  list-style: decimal;
+}
+
+.rich-text-editor__area li {
+  margin: 0 0 0.25em;
+}
+
+.rich-text-editor__area strong,
+.rich-text-editor__area b {
+  font-weight: 700;
+}
+
+.rich-text-editor__area a {
+  text-decoration: underline;
+}
+
 .rich-text-editor__area img {
   max-width: 100%;
 }

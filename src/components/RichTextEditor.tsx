@@ -131,7 +131,7 @@ export default function RichTextEditor({ value = '', onChange, placeholder = 'è¯
         className="rich-text-editor__area"
         style={{
           minHeight: height, maxHeight: 420, overflowY: 'auto',
-          padding: '10px 12px', outline: 'none', fontSize: 14, lineHeight: 1.6,
+          padding: '10px 12px', outline: 'none',
         }}
       />
     </div>
