@@ -6,6 +6,10 @@ export function getOrders(params?: Record<string, unknown>) {
   return request.get('/orders', { params })
 }
 
+export function getNodeHolders(params?: Record<string, unknown>) {
+  return request.get('/orders/holders', { params })
+}
+
 export function getOrderDetail(id: string) {
   return request.get(`/orders/${id}`)
 }

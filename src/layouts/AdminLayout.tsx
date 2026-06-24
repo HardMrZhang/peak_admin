@@ -63,6 +63,7 @@ const menuItems: MenuProps['items'] = [
     label: '订单管理',
     children: [
       { key: '/genesis', label: '影视节点订单' },
+      { key: '/shareholder-nodes', label: '股东节点列表' },
       { key: '/airdrop-orders', label: '三倍空投订单' },
       { key: '/stake-orders', label: '质押订单' },
     ],
@@ -121,6 +122,7 @@ const breadcrumbMap: Record<string, string> = {
   'airdrop-orders': '三倍空投订单',
   'stake-orders': '质押订单',
   genesis: '影视节点订单',
+  'shareholder-nodes': '股东节点列表',
   settlement: '结算管理',
   snapshots: '奖励快照',
   'contract-core': '合约控制台',
@@ -139,6 +141,7 @@ const pathGroupMap: Record<string, string> = {
   '/rbac/users': 'grp-accounts',
   '/orders': 'grp-orders',
   '/genesis': 'grp-orders',
+  '/shareholder-nodes': 'grp-orders',
   '/airdrop-orders': 'grp-orders',
   '/stake-orders': 'grp-orders',
   '/settlement/snapshots': 'settlement',
