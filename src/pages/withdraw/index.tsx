@@ -8,7 +8,8 @@ import {
 import {
   getWithdraws, approveWithdraw, rejectWithdraw, markWithdrawRisk, batchApproveWithdraws, getWithdrawDetail, confirmWithdrawSend,
 } from '@/api/withdraw'
-import { sendSplTransfer, connectWallet, FEE_COLLECT_ADDRESS } from '@/utils/solana'
+import { sendSplTransfer, connectWallet, getTxOnchainStatus, FEE_COLLECT_ADDRESS } from '@/utils/solana'
+import type { TxStatus } from '@/utils/solana'
 
 const { Title, Text } = Typography
 const { TextArea } = Input
@@ -42,6 +43,10 @@ export default function WithdrawPage() {
   const [riskReason, setRiskReason] = useState('')
   const [txHash, setTxHash] = useState('')
   const [feeTxHash, setFeeTxHash] = useState('')
+  const [txStatus, setTxStatus] = useState<TxStatus | ''>('')
+  const [feeStatus, setFeeStatus] = useState<TxStatus | ''>('')
+  const [checkingTx, setCheckingTx] = useState(false)
+  const [checkingFee, setCheckingFee] = useState(false)
   const [confirmLoading, setConfirmLoading] = useState(false)
   const [sendingUser, setSendingUser] = useState(false)
   const [sendingFee, setSendingFee] = useState(false)
@@ -131,6 +136,8 @@ export default function WithdrawPage() {
     setCurrentRecord(record)
     setTxHash('')
     setFeeTxHash('')
+    setTxStatus('')
+    setFeeStatus('')
     setConfirmVisible(true)
     try {
       const addr = await connectWallet()
@@ -149,10 +156,23 @@ export default function WithdrawPage() {
         currentRecord.toAddress,
         currentRecord.actualAmount,
       )
-      setTxHash(result.txHash)
-      message.success('用户转账已发送')
+      if (result.status === 'failed') {
+        // 链上确认失败 = 未扣款，允许重新发送
+        setTxHash('')
+        setTxStatus('')
+        message.error('该笔交易上链失败（未扣款），可重新发送')
+      } else {
+        setTxHash(result.txHash)
+        setTxStatus(result.status)
+        if (result.status === 'confirmed') {
+          message.success('用户转账已确认上链')
+        } else {
+          message.warning('交易已广播但尚未确认。请勿重复发送，点“查询链上状态”核实后再确认完成')
+        }
+      }
     } catch (err: any) {
-      message.error(err?.message || '转账失败')
+      // 广播前失败（未发出），可安全重试
+      message.error(err?.message || '转账未发出，可重试')
     } finally {
       setSendingUser(false)
     }
@@ -171,18 +191,52 @@ export default function WithdrawPage() {
         FEE_COLLECT_ADDRESS,
         currentRecord.feeAmount,
       )
-      setFeeTxHash(result.txHash)
-      message.success('手续费转账已发送')
+      if (result.status === 'failed') {
+        setFeeTxHash('')
+        setFeeStatus('')
+        message.error('手续费交易上链失败（未扣款），可重新发送')
+      } else {
+        setFeeTxHash(result.txHash)
+        setFeeStatus(result.status)
+        if (result.status === 'confirmed') {
+          message.success('手续费转账已确认上链')
+        } else {
+          message.warning('手续费交易已广播但尚未确认，请勿重复发送')
+        }
+      }
     } catch (err: any) {
-      message.error(err?.message || '手续费转账失败')
+      message.error(err?.message || '手续费转账未发出，可重试')
     } finally {
       setSendingFee(false)
+    }
+  }
+
+  const handleCheckStatus = async (which: 'user' | 'fee') => {
+    const sig = (which === 'user' ? txHash : feeTxHash).trim()
+    if (!sig) return
+    if (which === 'user') setCheckingTx(true); else setCheckingFee(true)
+    try {
+      const st = await getTxOnchainStatus(sig)
+      if (which === 'user') setTxStatus(st); else setFeeStatus(st)
+      if (st === 'confirmed') message.success('链上已确认')
+      else if (st === 'failed') {
+        message.error('链上确认失败（未扣款），可重新发送')
+        if (which === 'user') { setTxHash(''); setTxStatus('') } else { setFeeTxHash(''); setFeeStatus('') }
+      } else message.info('尚未确认，请稍后再查，切勿重复发送')
+    } catch {
+      message.error('查询失败，请重试')
+    } finally {
+      if (which === 'user') setCheckingTx(false); else setCheckingFee(false)
     }
   }
 
   const handleConfirmSend = async () => {
     if (!txHash.trim() || txHash.trim().length < 20) {
       message.warning('请先完成用户转账')
+      return
+    }
+    if (txStatus === 'pending' || feeStatus === 'pending') {
+      message.warning('有交易尚未确认，请先“查询链上状态”核实后再确认完成')
       return
     }
     setConfirmLoading(true)
@@ -192,9 +246,12 @@ export default function WithdrawPage() {
       setConfirmVisible(false)
       setTxHash('')
       setFeeTxHash('')
+      setTxStatus('')
+      setFeeStatus('')
       loadData(pagination.current, pagination.pageSize)
-    } catch {
-      /* empty */
+    } catch (err: any) {
+      // 后端链上校验未通过等：提示但不清空，便于核实
+      message.error(err?.response?.data?.message || err?.message || '确认失败')
     } finally {
       setConfirmLoading(false)
     }
@@ -388,7 +445,11 @@ export default function WithdrawPage() {
         onCancel={() => setConfirmVisible(false)}
         confirmLoading={confirmLoading}
         okText="确认完成"
-        okButtonProps={{ disabled: !txHash || (Number(currentRecord?.feeAmount || 0) > 0 && !feeTxHash) }}
+        okButtonProps={{
+          disabled: !txHash
+            || txStatus === 'pending'
+            || (Number(currentRecord?.feeAmount || 0) > 0 && (!feeTxHash || feeStatus === 'pending')),
+        }}
         width={600}
       >
         {currentRecord ? (
@@ -402,7 +463,12 @@ export default function WithdrawPage() {
             <div style={{ background: '#f0f5ff', borderRadius: 8, padding: '14px 16px', marginBottom: 12 }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}>
                 <Text strong>第一步：转账给用户</Text>
-                {txHash ? <Tag color="success">已完成</Tag> : <Tag color="processing">待转账</Tag>}
+                {(() => {
+                  if (txStatus === 'confirmed') return <Tag color="success">已确认上链</Tag>
+                  if (txStatus === 'pending') return <Tag color="warning">已广播·待确认</Tag>
+                  if (txHash) return <Tag color="processing">已填入·待核实</Tag>
+                  return <Tag color="default">待转账</Tag>
+                })()}
               </div>
               <div style={{ marginBottom: 6 }}>
                 <Text type="secondary" style={{ fontSize: 13 }}>金额：</Text>
@@ -428,10 +494,15 @@ export default function WithdrawPage() {
                 <Input
                   size="small"
                   value={txHash}
-                  onChange={(e) => setTxHash(e.target.value.trim())}
+                  onChange={(e) => { setTxHash(e.target.value.trim()); setTxStatus('') }}
                   placeholder="粘贴链上交易哈希"
                   style={{ fontSize: 11, marginTop: 2 }}
                 />
+                {txHash && txStatus !== 'confirmed' && (
+                  <Button size="small" type="link" loading={checkingTx} onClick={() => handleCheckStatus('user')} style={{ paddingLeft: 0, marginTop: 2 }}>
+                    查询链上状态
+                  </Button>
+                )}
               </div>
             </div>
 
@@ -439,7 +510,12 @@ export default function WithdrawPage() {
               <div style={{ background: '#fff7e6', borderRadius: 8, padding: '14px 16px' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}>
                   <Text strong>第二步：手续费归集</Text>
-                  {feeTxHash ? <Tag color="success">已完成</Tag> : <Tag color="warning">待转账</Tag>}
+                  {(() => {
+                    if (feeStatus === 'confirmed') return <Tag color="success">已确认上链</Tag>
+                    if (feeStatus === 'pending') return <Tag color="warning">已广播·待确认</Tag>
+                    if (feeTxHash) return <Tag color="processing">已填入·待核实</Tag>
+                    return <Tag color="default">待转账</Tag>
+                  })()}
                 </div>
                 <div style={{ marginBottom: 6 }}>
                   <Text type="secondary" style={{ fontSize: 13 }}>手续费：</Text>
@@ -464,10 +540,15 @@ export default function WithdrawPage() {
                   <Input
                     size="small"
                     value={feeTxHash}
-                    onChange={(e) => setFeeTxHash(e.target.value.trim())}
+                    onChange={(e) => { setFeeTxHash(e.target.value.trim()); setFeeStatus('') }}
                     placeholder="粘贴链上交易哈希"
                     style={{ fontSize: 11, marginTop: 2 }}
                   />
+                  {feeTxHash && feeStatus !== 'confirmed' && (
+                    <Button size="small" type="link" loading={checkingFee} onClick={() => handleCheckStatus('fee')} style={{ paddingLeft: 0, marginTop: 2 }}>
+                      查询链上状态
+                    </Button>
+                  )}
                 </div>
               </div>
             ) : (

@@ -108,8 +108,55 @@ async function ensureAtaExists(
   return ata
 }
 
+export type TxStatus = 'confirmed' | 'pending' | 'failed'
+
 export interface TransferResult {
   txHash: string
+  /** confirmed=链上已确认成功；failed=链上确认失败(未扣款,可重试)；pending=已广播但未确认(切勿重发,需核实) */
+  status: TxStatus
+}
+
+/**
+ * 查询某签名的链上真实状态。用于「已广播但确认超时」时人工核实，杜绝盲目重发。
+ */
+export async function getTxOnchainStatus(sig: string): Promise<TxStatus> {
+  const connection = getConnection()
+  try {
+    const st = await connection.getSignatureStatuses([sig], { searchTransactionHistory: true })
+    const info = st.value[0]
+    if (info) {
+      if (info.err) return 'failed'
+      if (info.confirmationStatus === 'confirmed' || info.confirmationStatus === 'finalized') return 'confirmed'
+      return 'pending'
+    }
+    const tx = await connection.getTransaction(sig, { commitment: 'confirmed', maxSupportedTransactionVersion: 0 })
+    if (tx) return tx.meta?.err ? 'failed' : 'confirmed'
+    return 'pending'
+  } catch {
+    return 'pending'
+  }
+}
+
+/**
+ * 等待交易确认。已广播后调用：绝不抛错（抛错会让操作员误以为没发出去而重发→双发）。
+ * 返回 confirmed / failed / pending 三态，由调用方据此决定 UI 与是否允许重发。
+ */
+async function waitForConfirmation(
+  connection: Connection,
+  sig: string,
+  blockhash: string,
+  lastValidBlockHeight: number,
+): Promise<TxStatus> {
+  try {
+    const res = await connection.confirmTransaction(
+      { signature: sig, blockhash, lastValidBlockHeight },
+      'confirmed',
+    )
+    return res.value.err ? 'failed' : 'confirmed'
+  } catch {
+    // 超时 / blockhash 过期：不代表失败，去查签名真实状态
+    return getTxOnchainStatus(sig)
+  }
 }
 
 /**
@@ -171,10 +218,12 @@ export async function sendSplTransfer(
 
   let sig: string
 
+  // 广播前失败（模拟失败/用户拒签/余额不足等）会在此抛出，此时尚未上链，可安全重试。
+  // 关闭 skipPreflight，让注定失败的交易在广播前就被拦截，避免拿到一个“看似成功”的签名。
   if (provider.signTransaction) {
     const signed = await provider.signTransaction(tx)
     sig = await connection.sendRawTransaction(signed.serialize(), {
-      skipPreflight: true,
+      skipPreflight: false,
       preflightCommitment: 'confirmed',
     })
     console.log('[solana] signTransaction + sendRaw -> sig:', sig)
@@ -194,10 +243,9 @@ export async function sendSplTransfer(
     throw new Error('钱包未返回交易签名，请检查控制台日志')
   }
 
-  connection.confirmTransaction({ signature: sig, blockhash, lastValidBlockHeight }, 'confirmed')
-    .catch(() => {})
-
-  return { txHash: sig }
+  // 已广播：等待真实确认结果后再返回（不再“广播即成功”）。
+  const status = await waitForConfirmation(connection, sig, blockhash, lastValidBlockHeight)
+  return { txHash: sig, status }
 }
 
 function findProgramPda(seed: string): PublicKey {
@@ -305,8 +353,6 @@ export async function sendPeakFromVault(
     throw new Error('钱包未返回交易签名，请检查控制台日志')
   }
 
-  connection.confirmTransaction({ signature: sig, blockhash, lastValidBlockHeight }, 'confirmed')
-    .catch(() => {})
-
-  return { txHash: sig }
+  const status = await waitForConfirmation(connection, sig, blockhash, lastValidBlockHeight)
+  return { txHash: sig, status }
 }
