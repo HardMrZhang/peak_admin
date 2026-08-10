@@ -36,6 +36,19 @@ function getConnection(): Connection {
   return new Connection(RPC_URL, 'confirmed')
 }
 
+/**
+ * 十进制金额字符串 → 链上最小单位。
+ * 用字符串换算而不是 amount * 10**decimals，后者会因浮点误差差出 1 个最小单位，
+ * 导致后端确认时链上金额与提现单金额对不上（AMOUNT_MISMATCH）。超出精度的小数位直接截断。
+ */
+function toRawAmount(amount: string, decimals: number): bigint {
+  const s = String(amount).trim()
+  if (!/^\d+(\.\d+)?$/.test(s)) throw new Error(`金额格式不正确：${amount}`)
+  const [intPart, fracRaw = ''] = s.split('.')
+  const frac = fracRaw.slice(0, decimals).padEnd(decimals, '0')
+  return BigInt(intPart || '0') * 10n ** BigInt(decimals) + BigInt(frac || '0')
+}
+
 interface SolanaProvider {
   publicKey: PublicKey
   isConnected: boolean
@@ -173,7 +186,7 @@ export async function sendSplTransfer(
   const connection = getConnection()
   const { mint, decimals } = getMintAndDecimals(asset)
   const toPk = new PublicKey(toAddress)
-  const lamports = BigInt(Math.round(parseFloat(amount) * (10 ** decimals)))
+  const lamports = toRawAmount(amount, decimals)
 
   const sourceAta = getAssociatedTokenAddressSync(mint, fromPk, true, TOKEN_PROGRAM_ID)
   const sourceBalance = await connection.getTokenAccountBalance(sourceAta).catch(() => null)
@@ -284,7 +297,7 @@ export async function sendPeakFromVault(
   const toPk = new PublicKey(toAddress)
   const destAta = await ensureAtaExists(connection, tx, adminPk, toPk, peakMint)
 
-  const userLamports = BigInt(Math.round(parseFloat(actualAmount) * (10 ** PEAK_DECIMALS)))
+  const userLamports = toRawAmount(actualAmount, PEAK_DECIMALS)
   const userData = Buffer.alloc(16)
   Buffer.from(discriminator).copy(userData, 0)
   userData.writeBigUInt64LE(userLamports, 8)
@@ -306,7 +319,7 @@ export async function sendPeakFromVault(
     const feePk = new PublicKey(feeAddress)
     const feeAta = await ensureAtaExists(connection, tx, adminPk, feePk, peakMint)
 
-    const feeLamports = BigInt(Math.round(parseFloat(feeAmount) * (10 ** PEAK_DECIMALS)))
+    const feeLamports = toRawAmount(feeAmount, PEAK_DECIMALS)
     const feeData = Buffer.alloc(16)
     Buffer.from(discriminator).copy(feeData, 0)
     feeData.writeBigUInt64LE(feeLamports, 8)

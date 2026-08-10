@@ -26,6 +26,19 @@ const statusMap: Record<string, { color: string; text: string }> = {
 
 const statusOptions = Object.entries(statusMap).map(([k, v]) => ({ label: v.text, value: k }))
 
+/** 金额统一两位小数：展示与实际发币必须同一个值，否则后端链上校验会判定金额不符。 */
+const fmtAmount = (v: unknown) => {
+  const n = Number(v)
+  return Number.isFinite(n) ? n.toFixed(2) : '0.00'
+}
+
+const normalizeAmounts = (r: Record<string, unknown> | null | undefined) => (r ? {
+  ...r,
+  amount: fmtAmount(r.amount),
+  feeAmount: fmtAmount(r.feeAmount),
+  actualAmount: fmtAmount(r.actualAmount),
+} : r)
+
 export default function WithdrawPage() {
   const { message } = App.useApp()
   const [loading, setLoading] = useState(false)
@@ -70,7 +83,7 @@ export default function WithdrawPage() {
       if (values.riskFlag !== undefined && values.riskFlag !== null) params.riskFlag = values.riskFlag
       const res: any = await getWithdraws(params)
       console.log('[Withdraw] API response:', res)
-      setData(res.data?.list || [])
+      setData((res.data?.list || []).map(normalizeAmounts))
       setPagination({ current: page, pageSize, total: res.data?.total || 0 })
     } catch (err) {
       console.error('[Withdraw] loadData error:', err)
@@ -126,7 +139,7 @@ export default function WithdrawPage() {
   const handleViewDetail = async (id: string) => {
     try {
       const res: any = await getWithdrawDetail(id)
-      setDetail(res.data)
+      setDetail(normalizeAmounts(res.data))
       setDetailVisible(true)
     } catch { /* empty */ }
   }
