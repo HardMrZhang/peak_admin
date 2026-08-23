@@ -19,6 +19,7 @@ import ReportsPage from '@/pages/reports'
 import BannersPage from '@/pages/content/banners'
 import PlatformWalletPage from '@/pages/platformWallet'
 import ContractCorePage from '@/pages/contractCore'
+import DramaIpoPage from '@/pages/dramaIpo'
 
 const router = createBrowserRouter([
   {
@@ -40,6 +41,7 @@ const router = createBrowserRouter([
       { path: 'stake-orders', element: <StakeOrdersPage /> },
       { path: 'genesis', element: <GenesisPage /> },
       { path: 'shareholder-nodes', element: <ShareholderNodesPage /> },
+      { path: 'drama-ipo', element: <DramaIpoPage /> },
       { path: 'orders/:id', element: <OrderDetailPage /> },
       { path: 'settlement/snapshots', element: <SnapshotsPage /> },
       { path: 'contract-core', element: <ContractCorePage /> },

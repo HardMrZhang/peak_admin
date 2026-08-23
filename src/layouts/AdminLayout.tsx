@@ -29,6 +29,7 @@ import {
   BellOutlined,
   BankOutlined,
   TeamOutlined,
+  VideoCameraOutlined,
 } from '@ant-design/icons'
 import type { MenuProps } from 'antd'
 import { useAuthStore } from '@/store/auth'
@@ -67,6 +68,11 @@ const menuItems: MenuProps['items'] = [
       { key: '/airdrop-orders', label: '三倍空投订单' },
       { key: '/stake-orders', label: '质押订单' },
     ],
+  },
+  {
+    key: '/drama-ipo',
+    icon: <VideoCameraOutlined />,
+    label: 'AI 短剧打新',
   },
   {
     key: 'settlement',
@@ -123,6 +129,7 @@ const breadcrumbMap: Record<string, string> = {
   'stake-orders': '质押订单',
   genesis: '影视节点订单',
   'shareholder-nodes': '股东节点列表',
+  'drama-ipo': 'AI 短剧打新',
   settlement: '结算管理',
   snapshots: '奖励快照',
   'contract-core': '合约控制台',
