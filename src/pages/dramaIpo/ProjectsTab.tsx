@@ -265,7 +265,7 @@ export default function ProjectsTab({ onGoRevenue }: { onGoRevenue: (project: Dr
           expandedRowRender: (r) => (
             <Descriptions size="small" column={3} bordered>
               <Descriptions.Item label="集数">{r.totalEpisodes ?? '-'}</Descriptions.Item>
-              <Descriptions.Item label="单集时长">{r.runtimeMinutes ? `${r.runtimeMinutes} 分钟` : '-'}</Descriptions.Item>
+              <Descriptions.Item label="总时长">{r.runtimeMinutes ? `${r.runtimeMinutes} 分钟` : '-'}</Descriptions.Item>
               <Descriptions.Item label="上映时间">{r.premiereAt ? dayjs(r.premiereAt).format('YYYY-MM-DD') : '-'}</Descriptions.Item>
               <Descriptions.Item label="编剧">{r.screenwriter ?? '-'}</Descriptions.Item>
               <Descriptions.Item label="导演">{r.director ?? '-'}</Descriptions.Item>
@@ -343,8 +343,8 @@ export default function ProjectsTab({ onGoRevenue }: { onGoRevenue: (project: Dr
                   </Form.Item>
                 </Col>
                 <Col span={6}>
-                  <Form.Item label="单集时长（分钟）" name="runtimeMinutes">
-                    <InputNumber min={1} style={{ width: '100%' }} />
+                  <Form.Item label="总时长（分钟）" name="runtimeMinutes">
+                    <Input placeholder="如 70-80" />
                   </Form.Item>
                 </Col>
               </Row>

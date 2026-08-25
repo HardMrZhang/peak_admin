@@ -29,7 +29,8 @@ export interface DramaProject {
   artDirector?: string | null
   producer?: string | null
   totalEpisodes?: number | null
-  runtimeMinutes?: number | null
+  /** 总时长（分钟），支持区间写法如 "70-80" */
+  runtimeMinutes?: string | null
   premiereAt?: string | null
   status: DramaProjectStatus
   confirmedAt?: string | null
