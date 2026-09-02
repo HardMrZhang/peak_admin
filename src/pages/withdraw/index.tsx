@@ -10,6 +10,7 @@ import {
 } from '@/api/withdraw'
 import { sendSplTransfer, connectWallet, getTxOnchainStatus, FEE_COLLECT_ADDRESS } from '@/utils/solana'
 import type { TxStatus } from '@/utils/solana'
+import { assetLabel } from '@/utils/asset'
 
 const { Title, Text } = Typography
 const { TextArea } = Input
@@ -285,7 +286,7 @@ export default function WithdrawPage() {
       ),
     },
     { title: '提现金额', dataIndex: 'amount', key: 'amount', width: 120, render: (v: string) => <Text strong style={{ whiteSpace: 'nowrap' }}>{v}</Text> },
-    { title: '资产类型', dataIndex: 'asset', key: 'asset', width: 100 },
+    { title: '资产类型', dataIndex: 'asset', key: 'asset', width: 100, render: (v: string) => assetLabel(v) },
     { title: '手续费', dataIndex: 'feeAmount', key: 'feeAmount', width: 100 },
     { title: '到账金额', dataIndex: 'actualAmount', key: 'actualAmount', width: 120 },
     {
@@ -436,7 +437,7 @@ export default function WithdrawPage() {
           <Descriptions column={2} bordered size="small" style={{ marginTop: 16 }}>
             <Descriptions.Item label="用户钱包">{detail.userWallet || '-'}</Descriptions.Item>
             <Descriptions.Item label="提现金额">{detail.amount}</Descriptions.Item>
-            <Descriptions.Item label="资产类型">{detail.asset}</Descriptions.Item>
+            <Descriptions.Item label="资产类型">{assetLabel(detail.asset)}</Descriptions.Item>
             <Descriptions.Item label="手续费">{detail.feeAmount}</Descriptions.Item>
             <Descriptions.Item label="到账金额">{detail.actualAmount}</Descriptions.Item>
             <Descriptions.Item label="风险标记">{detail.riskFlag ? <Tag color="red">有风险</Tag> : <Tag color="green">正常</Tag>}</Descriptions.Item>
@@ -485,7 +486,7 @@ export default function WithdrawPage() {
               </div>
               <div style={{ marginBottom: 6 }}>
                 <Text type="secondary" style={{ fontSize: 13 }}>金额：</Text>
-                <Text strong style={{ color: '#10b981', fontSize: 15 }}>{currentRecord.actualAmount} {currentRecord.asset}</Text>
+                <Text strong style={{ color: '#10b981', fontSize: 15 }}>{currentRecord.actualAmount} {assetLabel(currentRecord.asset)}</Text>
               </div>
               <div style={{ marginBottom: 6 }}>
                 <Text type="secondary" style={{ fontSize: 13 }}>收款地址：</Text>
@@ -500,7 +501,7 @@ export default function WithdrawPage() {
                 disabled={!!txHash}
                 style={{ marginTop: 8, width: '100%' }}
               >
-                {txHash ? '已发送' : `发送 ${currentRecord.actualAmount} ${currentRecord.asset} 给用户`}
+                {txHash ? '已发送' : `发送 ${currentRecord.actualAmount} ${assetLabel(currentRecord.asset)} 给用户`}
               </Button>
               <div style={{ marginTop: 6 }}>
                 <Text type="secondary" style={{ fontSize: 11 }}>txHash（已转账可手动填入）：</Text>
@@ -532,7 +533,7 @@ export default function WithdrawPage() {
                 </div>
                 <div style={{ marginBottom: 6 }}>
                   <Text type="secondary" style={{ fontSize: 13 }}>手续费：</Text>
-                  <Text strong style={{ color: '#f59e0b', fontSize: 15 }}>{currentRecord.feeAmount} {currentRecord.asset}</Text>
+                  <Text strong style={{ color: '#f59e0b', fontSize: 15 }}>{currentRecord.feeAmount} {assetLabel(currentRecord.asset)}</Text>
                 </div>
                 <div style={{ marginBottom: 6 }}>
                   <Text type="secondary" style={{ fontSize: 13 }}>归集地址：</Text>
@@ -546,7 +547,7 @@ export default function WithdrawPage() {
                   disabled={!txHash || !!feeTxHash}
                   style={{ marginTop: 8, width: '100%', borderColor: feeTxHash ? undefined : '#f59e0b', color: (sendingFee || feeTxHash) ? undefined : '#f59e0b' }}
                 >
-                  {feeTxHash ? '已发送' : `发送 ${currentRecord.feeAmount} ${currentRecord.asset} 手续费`}
+                  {feeTxHash ? '已发送' : `发送 ${currentRecord.feeAmount} ${assetLabel(currentRecord.asset)} 手续费`}
                 </Button>
                 <div style={{ marginTop: 6 }}>
                   <Text type="secondary" style={{ fontSize: 11 }}>txHash（已转账可手动填入）：</Text>

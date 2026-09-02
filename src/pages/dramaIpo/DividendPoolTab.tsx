@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState } from 'react'
 import { Alert, App, Button, Card, Col, Descriptions, Form, Input, InputNumber, Modal, Row, Space, Statistic, Tag, Typography } from 'antd'
 import { ReloadOutlined } from '@ant-design/icons'
 import dayjs from 'dayjs'
+import { assetLabel } from '@/utils/asset'
 import { depositDramaDividendPool, getDramaDividendPool, type DramaDividendPool } from '@/api/dramaIpo'
 
 const { Text, Paragraph } = Typography
@@ -31,7 +32,7 @@ export default function DividendPoolTab() {
 
   useEffect(() => { load() }, [load])
 
-  const asset = pool?.rewardAsset === 'AIPK' ? 'Aipk' : (pool?.rewardAsset ?? '')
+  const asset = assetLabel(pool?.rewardAsset)
 
   const handleDeposit = async () => {
     const values = await form.validateFields()
