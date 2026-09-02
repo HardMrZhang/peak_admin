@@ -14,6 +14,7 @@ import AdminUsersPage from '@/pages/rbac/users'
 import SnapshotsPage from '@/pages/settlement/snapshots'
 import ReferralPage from '@/pages/referral'
 import WithdrawPage from '@/pages/withdraw'
+import AipkSwapPage from '@/pages/aipkSwap'
 import NftPage from '@/pages/nft'
 import ReportsPage from '@/pages/reports'
 import BannersPage from '@/pages/content/banners'
@@ -47,6 +48,7 @@ const router = createBrowserRouter([
       { path: 'contract-core', element: <ContractCorePage /> },
       { path: 'referral', element: <ReferralPage /> },
       { path: 'withdraw', element: <WithdrawPage /> },
+      { path: 'aipk-swap', element: <AipkSwapPage /> },
       { path: 'nft', element: <NftPage /> },
       { path: 'reports', element: <ReportsPage /> },
       { path: 'content/banners', element: <BannersPage /> },
