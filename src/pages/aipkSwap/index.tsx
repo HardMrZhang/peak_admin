@@ -31,9 +31,9 @@ const short = (s?: string | null, n = 6) => (s ? `${s.slice(0, n)}…${s.slice(-
 const solscanTx = (h: string) => `https://solscan.io/tx/${h}`
 
 /**
- * AIpk → USDT 兑换审核：
+ * Aipk → USDT 兑换审核：
  *   待审核 → 通过 / 驳回；已通过 → 连接管理员钱包发 USDT 给用户 → 提交 txHash 验链 → 已打款。
- *   驳回后 AIpk 已在平台收款钱包，需人工退回并登记退款交易。
+ *   驳回后 Aipk 已在平台收款钱包，需人工退回并登记退款交易。
  */
 export default function AipkSwapPage() {
   const { message } = App.useApp()
@@ -94,7 +94,7 @@ export default function AipkSwapPage() {
     if (!current) return
     try {
       await rejectAipkSwap(current.id, rejectRemark)
-      message.success('已驳回。用户的 AIpk 已在平台收款钱包，请人工退回并登记退款交易')
+      message.success('已驳回。用户的 Aipk 已在平台收款钱包，请人工退回并登记退款交易')
       setRejectOpen(false)
       load()
     } catch (err: any) {
@@ -177,7 +177,7 @@ export default function AipkSwapPage() {
   const columns: ColumnsType<AipkSwapRow> = [
     { title: '单号', dataIndex: 'requestNo', width: 190, render: (v: string) => <Text copyable={{ text: v }} style={{ fontFamily: 'monospace', fontSize: 12 }}>{v}</Text> },
     { title: '用户钱包', dataIndex: 'walletAddress', width: 160, render: (v: string) => <Text copyable={{ text: v }}>{short(v)}</Text> },
-    { title: '转入 AIpk', dataIndex: 'aipkAmount', width: 130, align: 'right', render: (v: string) => Number(v).toLocaleString(undefined, { maximumFractionDigits: 4 }) },
+    { title: '转入 Aipk', dataIndex: 'aipkAmount', width: 130, align: 'right', render: (v: string) => Number(v).toLocaleString(undefined, { maximumFractionDigits: 4 }) },
     { title: '应付 USDT', dataIndex: 'usdtAmount', width: 130, align: 'right', render: (v: string) => <Text strong style={{ color: '#10b981' }}>{Number(v).toFixed(2)}</Text> },
     { title: '比例', dataIndex: 'rateUsdt', width: 80, render: (v: string) => `1:${Number(v)}` },
     { title: '转入交易', dataIndex: 'depositTxHash', width: 150, render: (v: string | null) => (v ? <a href={solscanTx(v)} target="_blank" rel="noreferrer">{short(v)}</a> : '-') },
@@ -217,8 +217,8 @@ export default function AipkSwapPage() {
   return (
     <div className="page-container">
       <div className="page-header">
-        <Title level={4} style={{ margin: 0 }}>AIpk 兑换审核</Title>
-        <Text type="secondary">用户把钱包内 AIpk 转入平台收款地址，审核通过后由管理员钱包按 1:1 打 USDT 到用户钱包</Text>
+        <Title level={4} style={{ margin: 0 }}>Aipk 兑换审核</Title>
+        <Text type="secondary">用户把钱包内 Aipk 转入平台收款地址，审核通过后由管理员钱包按 1:1 打 USDT 到用户钱包</Text>
       </div>
 
       {pendingCount > 0 && (
@@ -268,7 +268,7 @@ export default function AipkSwapPage() {
             <Descriptions size="small" column={1} bordered>
               <Descriptions.Item label="单号">{current.requestNo}</Descriptions.Item>
               <Descriptions.Item label="用户钱包"><Text copyable>{current.walletAddress}</Text></Descriptions.Item>
-              <Descriptions.Item label="转入 AIpk">{Number(current.aipkAmount).toLocaleString()} AIpk（{current.depositTxHash ? <a href={solscanTx(current.depositTxHash)} target="_blank" rel="noreferrer">{short(current.depositTxHash)}</a> : '-'}）</Descriptions.Item>
+              <Descriptions.Item label="转入 Aipk">{Number(current.aipkAmount).toLocaleString()} Aipk（{current.depositTxHash ? <a href={solscanTx(current.depositTxHash)} target="_blank" rel="noreferrer">{short(current.depositTxHash)}</a> : '-'}）</Descriptions.Item>
               <Descriptions.Item label="应付 USDT"><Text strong style={{ color: '#10b981', fontSize: 16 }}>{Number(current.usdtAmount).toFixed(2)} USDT</Text></Descriptions.Item>
             </Descriptions>
 
@@ -297,15 +297,15 @@ export default function AipkSwapPage() {
 
       {/* 驳回 */}
       <Modal title="驳回兑换" open={rejectOpen} onOk={handleReject} onCancel={() => setRejectOpen(false)} okText="确认驳回" okButtonProps={{ danger: true }}>
-        <Alert type="warning" showIcon style={{ marginBottom: 12 }} message="用户的 AIpk 已转入平台收款钱包，驳回后请人工退回并在列表中登记退款交易。" />
+        <Alert type="warning" showIcon style={{ marginBottom: 12 }} message="用户的 Aipk 已转入平台收款钱包，驳回后请人工退回并在列表中登记退款交易。" />
         <Input.TextArea rows={3} maxLength={255} value={rejectRemark} onChange={(e) => setRejectRemark(e.target.value)} placeholder="驳回原因（用户可见）" />
       </Modal>
 
       {/* 登记退款 */}
-      <Modal title="登记 AIpk 退款交易" open={refundOpen} onOk={handleRefund} onCancel={() => setRefundOpen(false)} okText="保存" okButtonProps={{ disabled: refundTx.trim().length < 20 }}>
+      <Modal title="登记 Aipk 退款交易" open={refundOpen} onOk={handleRefund} onCancel={() => setRefundOpen(false)} okText="保存" okButtonProps={{ disabled: refundTx.trim().length < 20 }}>
         {current && (
           <Paragraph type="secondary">
-            需退回 <b>{Number(current.aipkAmount).toLocaleString()} AIpk</b> 到 <Text copyable>{current.walletAddress}</Text>
+            需退回 <b>{Number(current.aipkAmount).toLocaleString()} Aipk</b> 到 <Text copyable>{current.walletAddress}</Text>
           </Paragraph>
         )}
         <Input value={refundTx} onChange={(e) => setRefundTx(e.target.value)} placeholder="退款交易哈希" />

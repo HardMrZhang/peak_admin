@@ -47,7 +47,7 @@ export function confirmAipkSwapSend(id: string, txHash: string) {
   return request.post(`/aipk-swap/${id}/confirm-send`, { txHash })
 }
 
-/** 驳回单人工退回 AIpk 后登记 */
+/** 驳回单人工退回 Aipk 后登记 */
 export function markAipkSwapRefund(id: string, refundTxHash: string) {
   return request.post(`/aipk-swap/${id}/refund`, { refundTxHash })
 }

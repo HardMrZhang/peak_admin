@@ -8,7 +8,7 @@ const { Text, Paragraph } = Typography
 
 /**
  * 链上分红池：每天把短剧真实收益的 40% 入金，合约按份额加权累计，用户每周自行领取。
- * 入金时后端会先推进到期仓位，再按这笔入金的加权分摊给上级发放级差 / 平级（AIpk 账本）。
+ * 入金时后端会先推进到期仓位，再按这笔入金的加权分摊给上级发放级差 / 平级（Aipk 账本）。
  */
 export default function DividendPoolTab() {
   const { message, modal } = App.useApp()
@@ -31,7 +31,7 @@ export default function DividendPoolTab() {
 
   useEffect(() => { load() }, [load])
 
-  const asset = pool?.rewardAsset === 'AIPK' ? 'AIpk' : (pool?.rewardAsset ?? '')
+  const asset = pool?.rewardAsset === 'AIPK' ? 'Aipk' : (pool?.rewardAsset ?? '')
 
   const handleDeposit = async () => {
     const values = await form.validateFields()
@@ -42,7 +42,7 @@ export default function DividendPoolTab() {
           <Paragraph>金额：<b>{values.amount} {asset}</b>（从 operator 钱包的 {asset} 代币账户转入池子金库）</Paragraph>
           <Paragraph type="secondary" style={{ marginBottom: 0 }}>
             入金后立即按当前全网活跃份额 {pool?.totalActiveShares ?? '0'} 加权累计到各仓位，用户每周可领取一次；
-            同时按这笔入金给上级发放团队级差 / 平级（AIpk 账本）。此操作不可撤销。
+            同时按这笔入金给上级发放团队级差 / 平级（Aipk 账本）。此操作不可撤销。
           </Paragraph>
         </div>
       ),
@@ -63,7 +63,7 @@ export default function DividendPoolTab() {
                 <Descriptions.Item label="级差/平级">
                   {d.dynamic?.error
                     ? <Text type="danger">发放失败：{d.dynamic.error}</Text>
-                    : `${d.dynamic?.rewards ?? 0} 笔，合计 ${d.dynamic?.aipkTotal ?? '0'} AIpk（覆盖 ${d.dynamic?.positions ?? 0} 个活跃仓位）`}
+                    : `${d.dynamic?.rewards ?? 0} 笔，合计 ${d.dynamic?.aipkTotal ?? '0'} Aipk（覆盖 ${d.dynamic?.positions ?? 0} 个活跃仓位）`}
                 </Descriptions.Item>
               </Descriptions>
             ),

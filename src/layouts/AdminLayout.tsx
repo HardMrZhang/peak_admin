@@ -100,7 +100,7 @@ const menuItems: MenuProps['items'] = [
   {
     key: '/aipk-swap',
     icon: <WalletOutlined />,
-    label: 'AIpk 兑换审核',
+    label: 'Aipk 兑换审核',
   },
   {
     key: '/platform-wallet',
@@ -140,7 +140,7 @@ const breadcrumbMap: Record<string, string> = {
   'contract-core': '合约控制台',
   referral: '推荐管理',
   withdraw: '提现管理',
-  'aipk-swap': 'AIpk 兑换审核',
+  'aipk-swap': 'Aipk 兑换审核',
   'platform-wallet': '归集钱包',
   nft: 'NFT 管理',
   reports: '数据报表',

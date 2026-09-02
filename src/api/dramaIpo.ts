@@ -153,7 +153,7 @@ export function getDramaDividendPool() {
   return request.get('/drama-ipo/dividend-pool')
 }
 
-/** 每日入金：当天短剧真实收益的 40%（按池子币种，当前为 AIpk） */
+/** 每日入金：当天短剧真实收益的 40%（按池子币种，当前为 Aipk） */
 export function depositDramaDividendPool(body: { amount: string; remark?: string }) {
   return request.post('/drama-ipo/dividend-pool/deposit', body)
 }

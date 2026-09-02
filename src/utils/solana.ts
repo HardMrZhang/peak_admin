@@ -21,7 +21,7 @@ const PEAK_DECIMALS = 9
 export const FEE_COLLECT_ADDRESS = 'EfQv2XvBGckvhDh2urjC6bjnvmjuE8f6wnA7ZHbBRRNL'
 
 const PEAK_MINT = new PublicKey('24NSBvTN5oPhSDPorMNGrLFJcqor9hdPZm3AqKBVXDWy')
-// AI 短剧打新奖励代币 AIpk（2026-09-02 发行，1 亿枚，不可增发，9 位精度）
+// AI 短剧打新奖励代币 Aipk（2026-09-02 发行，1 亿枚，不可增发，9 位精度）
 const AIPK_MINT = new PublicKey('7rqEs7ebs6nvoS4SbW2YbpPXtdipzeVG8yrSAMCSdT8j')
 const AIPK_DECIMALS = 9
 
