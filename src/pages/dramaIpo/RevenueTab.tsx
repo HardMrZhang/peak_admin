@@ -214,6 +214,13 @@ export default function RevenueTab({ projectId: initialProjectId }: { projectId?
 
   return (
     <>
+      <Alert
+        type="info"
+        showIcon
+        style={{ marginBottom: 16 }}
+        message="分红已改为链上分红池每日入金（见「分红池」页签）"
+        description="此处仅作各平台收益的录入与公示（前端「收益披露」读取）。链上分红池启用后，「确认分红期」不再往用户 USDT 账本发放分红，避免与链上分红重复。"
+      />
       <Card size="small" style={{ marginBottom: 16 }}>
         <Space>
           <Text>选择剧目：</Text>

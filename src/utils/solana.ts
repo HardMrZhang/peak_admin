@@ -21,6 +21,9 @@ const PEAK_DECIMALS = 9
 export const FEE_COLLECT_ADDRESS = 'EfQv2XvBGckvhDh2urjC6bjnvmjuE8f6wnA7ZHbBRRNL'
 
 const PEAK_MINT = new PublicKey('24NSBvTN5oPhSDPorMNGrLFJcqor9hdPZm3AqKBVXDWy')
+// AI 短剧打新奖励代币 AIpk（2026-09-02 发行，1 亿枚，不可增发，9 位精度）
+const AIPK_MINT = new PublicKey('7rqEs7ebs6nvoS4SbW2YbpPXtdipzeVG8yrSAMCSdT8j')
+const AIPK_DECIMALS = 9
 
 function getPeakMint(): PublicKey {
   return PEAK_MINT
@@ -29,6 +32,7 @@ function getPeakMint(): PublicKey {
 function getMintAndDecimals(asset: string): { mint: PublicKey; decimals: number } {
   if (asset === 'USDT') return { mint: USDT_MINT, decimals: USDT_DECIMALS }
   if (asset === 'PEAK') return { mint: getPeakMint(), decimals: PEAK_DECIMALS }
+  if (asset === 'AIPK') return { mint: AIPK_MINT, decimals: AIPK_DECIMALS }
   throw new Error(`Unsupported asset: ${asset}`)
 }
 

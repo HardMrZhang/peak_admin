@@ -376,7 +376,7 @@ export default function WithdrawPage() {
             <Select placeholder="状态" allowClear style={{ width: 120 }} options={statusOptions} />
           </Form.Item>
           <Form.Item name="asset">
-            <Select placeholder="资产" allowClear style={{ width: 100 }} options={[{ label: 'USDT', value: 'USDT' }, { label: 'PEAK', value: 'PEAK' }]} />
+            <Select placeholder="资产" allowClear style={{ width: 100 }} options={[{ label: 'USDT', value: 'USDT' }, { label: 'PEAK', value: 'PEAK' }, { label: 'AIpk', value: 'AIPK' }]} />
           </Form.Item>
           <Form.Item name="riskFlag">
             <Select placeholder="风险标记" allowClear style={{ width: 120 }} options={[{ label: '有风险', value: true }, { label: '无风险', value: false }]} />

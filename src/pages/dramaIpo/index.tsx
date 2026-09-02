@@ -6,6 +6,7 @@ import ProjectsTab from './ProjectsTab'
 import SubscriptionsTab from './SubscriptionsTab'
 import RevenueTab from './RevenueTab'
 import PrincipalTab from './PrincipalTab'
+import DividendPoolTab from './DividendPoolTab'
 
 const { Title, Text } = Typography
 
@@ -39,7 +40,7 @@ export default function DramaIpoPage() {
     <div className="page-container">
       <div className="page-header">
         <Title level={4} style={{ margin: 0 }}>AI 短剧打新</Title>
-        <Text type="secondary">剧目上架、认购记录、月度收益与分红结算</Text>
+        <Text type="secondary">剧目上架、认购记录、链上分红池每日入金与本金返还</Text>
       </div>
 
       <Row gutter={16} style={{ marginBottom: 16 }}>
@@ -77,7 +78,8 @@ export default function DramaIpoPage() {
         items={[
           { key: 'projects', label: '剧目管理', children: <ProjectsTab onGoRevenue={goRevenue} /> },
           { key: 'subscriptions', label: '认购记录', children: <SubscriptionsTab /> },
-          { key: 'revenue', label: '月度收益与分红', children: <RevenueTab projectId={projectId} /> },
+          { key: 'dividendPool', label: '分红池（每日入金）', children: <DividendPoolTab /> },
+          { key: 'revenue', label: '月度收益录入', children: <RevenueTab projectId={projectId} /> },
           { key: 'principal', label: '本金返还', children: <PrincipalTab /> },
         ]}
       />

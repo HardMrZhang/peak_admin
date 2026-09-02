@@ -123,6 +123,41 @@ export function getDramaOverview() {
   return request.get('/drama-ipo/overview')
 }
 
+/** 链上分红池（share_dividend）状态 */
+export interface DramaDividendPool {
+  enabled: boolean
+  initialized?: boolean
+  rewardMint?: string
+  rewardAsset?: string
+  vault?: string
+  claimIntervalSecs?: number
+  claimFeeRate?: number
+  dividendStartDay?: number
+  dividendDays?: number
+  paused?: boolean
+  totalRegisteredShares?: string
+  totalActiveShares?: string
+  activePositions?: string
+  endedPositions?: string
+  positionCount?: string
+  totalDeposited?: string
+  totalDistributed?: string
+  carry?: string
+  totalClaimed?: string
+  totalFee?: string
+  depositCount?: string
+  lastDepositAt?: string | null
+}
+
+export function getDramaDividendPool() {
+  return request.get('/drama-ipo/dividend-pool')
+}
+
+/** 每日入金：当天短剧真实收益的 40%（按池子币种，当前为 AIpk） */
+export function depositDramaDividendPool(body: { amount: string; remark?: string }) {
+  return request.post('/drama-ipo/dividend-pool/deposit', body)
+}
+
 export function getDramaProjects(params?: Record<string, unknown>) {
   return request.get('/drama-ipo/projects', { params })
 }
